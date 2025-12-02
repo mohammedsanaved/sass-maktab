@@ -1,0 +1,16 @@
+{
+  "Home": {
+    "welcome": "مرحباً بك مرة أخرى، محمد سناوید",
+    "dashboard": "لوحة القيادة",
+    "students": "الطلاب",
+    "language": "اللغة",
+    "getStarted": "ابدأ بالتعديل على",
+    "saveChanges": "احفظ وشاهد تغييراتك فوراً.",
+    "deploy": "انشر الآن",
+    "readDocs": "اقرأ وثائقنا",
+    "learn": "تعلم",
+    "examples": "أمثلة",
+    "goToNext": "اذهب إلى nextjs.org",
+    "settings": "إعدادات"
+  }
+}

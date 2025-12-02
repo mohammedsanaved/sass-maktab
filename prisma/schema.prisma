@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+
+// ------------------------------------
+// 1. Enums & User Roles (Simplified)
+// ------------------------------------
+// ------------------------------------
+// 1. Enums & User Roles
+// ------------------------------------
+
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+enum StudentType {
+  HAFIZ
+  NAZERA
+}
+
+enum HafizCategory {
+  FULL_TIME
+  HALF_TIME
+}
+
+enum FullTimeSubCategory {
+  HAFIZ_SCHOOL
+  BASICS
+  FULL_COURSE
+}
+
+enum StudentStatus {
+  NEW
+  OLD
+}
+
+// ------------------------------------
+// 2. Core Authentication Models
+// ------------------------------------
+
+model Admin {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+}
+
+model Teacher {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String   @unique
+  password    String
+  phone       String   @unique
+  address     String
+  role        Role     @default(TEACHER)
+  
+  // A teacher handles multiple class sessions
+  classSessions ClassSession[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ------------------------------------
+// 3. Core School Structure Models
+// ------------------------------------
+
+// Represents the grade/level name, e.g., "Nursery 1", "Deniyaat 1"
+model ClassLevel {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique // e.g., "Deniyaat 1", "Deniyaat 2"
+  description String?
+  
+  // A ClassLevel can have many sections
+  sessions  ClassSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Represents a specific time slot, e.g., "7:30 AM - 8:30 AM"
+model TimeSlot {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  label     String   // e.g., "Morning Batch 1"
+  startTime String   // "07:30"
+  endTime   String   // "08:30"
+  
+  // This time slot can be used by many class sessions
+  sessions  ClassSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// THE KEY MODEL: Represents a SPECIFIC section of a class
+// e.g., "Deniyaat 1 taught by Fatima at 7:30 AM"
+model ClassSession {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // One-to-Many: A Teacher teaches many sessions
+  teacherId    String   @db.ObjectId
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  
+  // One-to-Many: A ClassLevel has many sessions (sections)
+  classLevelId String   @db.ObjectId
+  classLevel   ClassLevel @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  
+  // One-to-Many: A TimeSlot is used for many sessions
+  timeSlotId   String   @db.ObjectId
+  timeSlot     TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  
+  // IMPORTANT: Section identifier (e.g., "A", "B", "Morning", "Evening")
+  sectionName  String?  // Optional: Admin can name sections like "Section A"
+  
+  // Maximum capacity for this section
+  maxStudents  Int?     @default(50)
+  
+  // CRITICAL: Students are assigned to THIS specific session, not just the ClassLevel
+  students     Student[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // A teacher cannot be in two places at the same time
+  @@unique([teacherId, timeSlotId])
+  
+  // Optional: Prevent duplicate sections (same class + time = same section)
+  // Remove this if you want multiple teachers for the same class at the same time
+  @@unique([classLevelId, timeSlotId, sectionName])
+}
+
+// ------------------------------------
+// 4. Student & Financials
+// ------------------------------------
+
+model Student {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // ----- PERSONAL INFO -----
+  formNo      String?   @unique
+  studentName String
+  fatherName  String
+  dateOfBirth DateTime
+  age         Int?
+  
+  // ----- CONTACT -----
+  mobile        String
+  residence     String?
+  fullPermanentAddress String
+  
+  // ----- GUARDIAN -----
+  parentGuardianOccupation String?
+  
+  // ----- PREVIOUS EDUCATION -----
+  previousTraining String?
+  
+  // ----- CATEGORIZATION -----
+  type          StudentType
+  hafizCategory HafizCategory?
+  fullTimeSub   FullTimeSubCategory?
+  status        StudentStatus @default(NEW)
+  
+  // ----- THE CRITICAL CHANGE -----
+  // Students are now assigned to a SPECIFIC ClassSession (section), not just a ClassLevel
+  // This links them to a specific teacher, time, and section
+  classSessionId  String?   @db.ObjectId
+  classSession    ClassSession? @relation(fields: [classSessionId], references: [id], onDelete: SetNull)
+
+  // ----- FINANCIALS -----
+  admissionFee  Float?
+  monthlyFees   Float
+  donation      Float?
+  
+  // Many-to-One: A student has many fee payments
+  feePayments FeePayment[]
+  
+  // ----- METADATA -----
+  remarks       String?
+  isActive      Boolean   @default(true)
+  joinedAt      DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model FeePayment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Many-to-One: Many payments belong to one Student
+  studentId   String   @db.ObjectId
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  receiptNo   String?
+  paymentDate DateTime @default(now())
+  paymentType String   // "ADMISSION" | "MONTHLY" | "DONATION"
+  remarks     String?
+  
+  createdAt   DateTime @default(now())
+}
