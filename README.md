@@ -4,6 +4,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+<!-- mongod --replSet rs0 --dbpath "C:\Program Files\MongoDB\Server\8.0\data" --bind_ip_all -->
+
 ```bash
 npm run dev
 # or
