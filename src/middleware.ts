@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   // ----------------------------------------------------
   if (pathname.startsWith('/api')) {
     // Define protected API routes
-    const protectedRoutes = ['/api/auth/profile'];
+    const protectedRoutes = ['/api/auth/profile', '/api/settings'];
     const adminRoutes = ['/api/admin'];
     const teacherRoutes = ['/api/teacher'];
 
