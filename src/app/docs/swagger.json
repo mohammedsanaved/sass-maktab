@@ -156,10 +156,107 @@
           "phone": { "type": "string" },
           "address": { "type": "string" }
         }
+      },
+      "TeacherWithClasses": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Teacher" },
+          {
+            "type": "object",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "classLevel": { "$ref": "#/components/schemas/ClassLevel" },
+                    "timeSlots": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TimeSlot" }
+                    },
+                    "totalStudents": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
   "paths": {
+
+    "/teacherswithclassdetails": {
+      "get": {
+        "summary": "List all Teachers with Details and Assignments",
+        "tags": ["Teachers"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search by Name, Phone, Email"
+          },
+          {
+            "name": "classId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by Class Level ID"
+          },
+          {
+            "name": "timeSlotId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by Time Slot ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Teachers with assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TeacherWithClasses" }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server Error" }
+        }
+      },
+      "put": {
+        "summary": "Assign Class and TimeSlots to a Teacher",
+        "tags": ["Teachers"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["teacherId", "classId", "timeSlotIds"],
+                "properties": {
+                  "teacherId": { "type": "string" },
+                  "classId": { "type": "string" },
+                  "timeSlotIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "sectionName": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Assignments updated" },
+          "400": { "description": "Invalid input" },
+          "409": { "description": "Conflict: Class already assigned to another teacher" },
+          "500": { "description": "Server Error" }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "summary": "Register a new user (Admin or Teacher)",
