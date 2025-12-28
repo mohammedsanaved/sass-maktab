@@ -14,17 +14,19 @@ export async function middleware(request: NextRequest) {
   // ----------------------------------------------------
   if (pathname.startsWith('/api')) {
     // Define protected API routes
-    const protectedRoutes = ['/api/auth/profile', '/api/settings', '/api/teachers', '/api/teacherswithclassdetails'];
+    const protectedRoutes = ['/api/auth/profile', '/api/settings', '/api/teachers', '/api/teacherswithclassdetails', '/api/students/', '/api/payments/'];
     const adminRoutes = ['/api/admin'];
     const teacherRoutes = ['/api/teacher/'];
     const teacherWithClassDetailsRoutes = ['/api/teacherswithclassdetails/'];
+    const paymentsRoutes = ['/api/payments/'];
 
     const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
     const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
     const isTeacherRoute = teacherRoutes.some((route) => pathname.startsWith(route));
     const isTeacherWithClassDetailsRoute = teacherWithClassDetailsRoutes.some((route) => pathname.startsWith(route));
+    const isPaymentsRoute = paymentsRoutes.some((route) => pathname.startsWith(route));
 
-    if (isProtectedRoute || isAdminRoute || isTeacherRoute || isTeacherWithClassDetailsRoute) {
+    if (isProtectedRoute || isAdminRoute || isTeacherRoute || isTeacherWithClassDetailsRoute || isPaymentsRoute) {
       const authorization = request.headers.get('authorization');
 
       if (!authorization || !authorization.startsWith('Bearer ')) {

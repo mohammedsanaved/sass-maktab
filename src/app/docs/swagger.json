@@ -146,6 +146,35 @@
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "studentName": { "type": "string" },
+          "rollNumber": { "type": "string" },
+          "grNumber": { "type": "string" },
+          "gender": { "type": "string" },
+          "age": { "type": "integer" },
+          "fatherName": { "type": "string" },
+          "mobile": { "type": "string" },
+          "formNo": { "type": "string" },
+          "admissionFee": { "type": "number" },
+          "monthlyFees": { "type": "number" },
+          "remarks": { "type": "string" },
+          "hafizCategory": { "type": "string" },
+          "fullTimeSubCategory": { "type": "string" },
+          "classSession": { "$ref": "#/components/schemas/ClassSession" }
+        }
+      },
+      "ClassSession": {
+        "type": "object",
+        "properties": {
+             "id": { "type": "string" },
+             "classLevel": { "$ref": "#/components/schemas/ClassLevel" },
+             "timeSlot": { "$ref": "#/components/schemas/TimeSlot" }
+        }
+      },
+
       "TeacherInput": {
         "type": "object",
         "required": ["name", "email", "password", "phone", "address"],
@@ -185,6 +214,143 @@
   },
   "paths": {
 
+    "/students": {
+      "get": {
+        "summary": "List Students with Filters",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "classId", "in": "query", "schema": { "type": "string" } },
+          { "name": "timeSlotId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Students",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Admission (Create Student)",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentName", "fatherName", "mobile", "dateOfBirth", "gender"],
+                "properties": {
+                  "studentName": { "type": "string" },
+                  "fatherName": { "type": "string" },
+                  "gender": { "type": "string" },
+                  "mobile": { "type": "string" },
+                  "dateOfBirth": { "type": "string", "format": "date-time" },
+                  "grNumber": { "type": "string" },
+                  "rollNumber": { "type": "string" },
+                  "residence": { "type": "string" },
+                  "fullPermanentAddress": { "type": "string" },
+                  "emergencyContactName": { "type": "string" },
+                  "emergencyContactPhone": { "type": "string" },
+                  "classId": { "type": "string" },
+                  "timeSlotId": { "type": "string" },
+                  "hafizCategory": { "type": "string" },
+                  "fullTimeSubCategory": { "type": "string" },
+                  "formNo": { "type": "string" },
+                  "admissionFee": { "type": "number" },
+                  "monthlyFees": { "type": "number" },
+                  "remarks": { "type": "string" },
+                  "age": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Student Created" }
+        }
+      }
+    },
+    "/students/search": {
+      "get": {
+        "summary": "Search Students",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "required": true, "description": "Search query (Name, RollNo, GrNo)" }
+        ],
+        "responses": {
+          "200": { "description": "Search results", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } } } } }
+        }
+      }
+    },
+    "/students/promote": {
+      "put": {
+        "summary": "Bulk Promote Students",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentIds", "classId", "timeSlotId"],
+                "properties": {
+                  "studentIds": { "type": "array", "items": { "type": "string" } },
+                  "classId": { "type": "string" },
+                  "timeSlotId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Promotion successful" }
+        }
+      }
+    },
+    "/students/export": {
+      "get": {
+        "summary": "Export Students as CSV",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": { "description": "CSV File", "content": { "text/csv": { "schema": { "type": "string", "format": "binary" } } } }
+        }
+      }
+    },
+    "/students/{id}": {
+      "get": {
+        "summary": "Get Student Details",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Student details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update Student Details",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "studentName": { "type": "string" }, "status": { "type": "string" } } } 
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Student updated" }
+        }
+      }
+    },
     "/teacherswithclassdetails": {
       "get": {
         "summary": "List all Teachers with Details and Assignments",
@@ -798,6 +964,129 @@
             "description": "Teacher deleted"
           },
           "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/payments": {
+      "get": {
+        "summary": "List Payments / Search Students",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Search by Name or Roll Number" },
+          { "name": "classId", "in": "query", "schema": { "type": "string" } },
+          { "name": "timeSlotId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PAID", "UNPAID", "ALL"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of students with payment status",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } }, "pagination": { "type": "object" } } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Record Payment (PayNow / Advance)",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentId", "amount", "months"],
+                "properties": {
+                  "studentId": { "type": "string" },
+                  "amount": { "type": "number" },
+                  "months": { "type": "array", "items": { "type": "string" }, "description": "Array of YYYY-MM" },
+                  "remarks": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Payment recorded" }
+        }
+      }
+    },
+    "/payments/receipt": {
+      "get": {
+        "summary": "Get Receipt Details",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "paymentId", "in": "query", "schema": { "type": "string" } },
+          { "name": "studentId", "in": "query", "schema": { "type": "string" }, "description": "Get latest receipt for student" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt details",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/dashboard/admissionapplications": {
+      "get": {
+        "summary": "List Admission Applications",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of applications" }
+        }
+      },
+      "put": {
+        "summary": "Update Admission Status",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentId", "status"],
+                "properties": {
+                  "studentId": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    },
+    "/dashboard/attendencestatus": {
+      "get": {
+        "summary": "Get Attendance Status Counts",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": { "description": "Counts of regular, irregular, completed" }
+        }
+      }
+    },
+    "/dashboard/overview": {
+      "get": {
+        "summary": "Get Dashboard Overview Stats",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "month", "in": "query", "schema": { "type": "integer" } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Overview stats" }
         }
       }
     }
