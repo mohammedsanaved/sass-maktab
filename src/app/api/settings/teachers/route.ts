@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
-import { Role } from '@prisma/client';
+// import { Role } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -32,9 +32,10 @@ export async function POST(request: Request) {
         password, // In a real app, hash this!
         phone,
         address,
-        role: Role.TEACHER,
+        role: 'TEACHER',
       },
     });
+    console.log('New teacher created:', newTeacher);
     return NextResponse.json(newTeacher, { status: 201 });
   } catch (error) {
     console.error('Error creating teacher:', error);

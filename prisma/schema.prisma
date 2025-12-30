@@ -167,9 +167,11 @@ model Student {
   
   // ----- PERSONAL INFO -----
   formNo      String?   @unique
-  rollNumber   String    @unique  // required + unique
+  grNumber    String?   @unique  // Gr. No from UI
+  rollNumber   String?    @unique  // required + unique (made optional temporarily if Gr. No is primary, but sticking to schema) - User might want both.
   studentName String
   fatherName  String
+  gender      String?   // "Male" | "Female"
   dateOfBirth DateTime
   age         Int?
   
@@ -178,6 +180,16 @@ model Student {
   residence     String?
   fullPermanentAddress String
   
+  // ----- EMERGENY CONTACTS -----
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  emergencyContactName2  String? // Optional second contact
+  emergencyContactPhone2 String?
+
+  // ----- HIFZ DETAILS -----
+  hafizCategory       String?   // "Full Time", "Part Time", "Nazera" etc.
+  fullTimeSubCategory String?   // If "Full Time"
+
   // ----- GUARDIAN -----
   parentGuardianOccupation String?
   
@@ -185,9 +197,8 @@ model Student {
   previousTraining String?
   
   // ----- CATEGORIZATION -----
-  type          StudentType
-  hafizCategory HafizCategory?
-  fullTimeSub   FullTimeSubCategory?
+  type          StudentType @default(NAZERA)
+  
   admissionStatus  AdmissionStatus @default(IN_PROGRESS)
   status        StudentStatus @default(NEW)
   studyStatus      StudyStatus     @default(REGULAR)
@@ -210,6 +221,7 @@ model Student {
   // ----- METADATA -----
   remarks       String?
   isActive      Boolean   @default(true)
+  lastFeePaidMonth DateTime? // Tracks the last month for which fees were paid
   joinedAt      DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
