@@ -34,14 +34,14 @@ const SidebarItem = ({
       collapsed ? 'justify-center px-2' : 'px-6'
     } ${
       active
-        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-4 border-primary-600 rtl:border-r-0 rtl:border-l-4'
+        ? 'bg-primary-500 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-4 border-primary-600 rtl:border-r-0 rtl:border-l-4'
         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
     }`}
   >
     <Icon className={`w-5 h-5 ${collapsed ? '' : 'me-3 rtl:ml-3 rtl:mr-0'}`} />
     {!collapsed && (
       <span className='font-medium whitespace-nowrap overflow-hidden transition-all duration-300 opacity-100'>
-        {label}
+        {label.split('.')[1].toLocaleUpperCase()}
       </span>
     )}
   </Link>
@@ -104,10 +104,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
-          to='/payments'
+          to='/dashboard/payments'
           icon={CreditCard}
           label={t('payments')}
-          active={pathname.startsWith('/payments')}
+          active={pathname.startsWith('/dashboard/payments')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
@@ -132,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
             }`}
           />
           {isSidebarOpen && (
-            <span className='text-sm font-medium'>{t('logout')}</span>
+            <span className='text-sm font-medium'>{'LOGOUT'}</span>
           )}
         </Link>
       </div>

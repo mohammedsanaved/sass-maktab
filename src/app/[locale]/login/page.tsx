@@ -4,20 +4,39 @@ import React, { useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { TextField, Button, Card } from '@/components/ui';
 import { Lock, Mail } from 'lucide-react';
+// import { login } from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@salah.com');
+  const [password, setPassword] = useState('admin');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    if (email === 'admin@salah.com' && password === 'admin') {
-      localStorage.setItem('isAuthenticated', 'true');
-      router.push('/dashboard');
-    } else {
-      alert('Invalid credentials! (Use admin@salah.com / admin)');
+    setIsLoading(true);
+    try {
+      // const data = await login({ email, password });
+      const data = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      }).then((res) => res.json());
+      if (data && data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+        toast.success('Login successful!');
+        router.push('/dashboard');
+      } else {
+        toast.error('Login failed: No access token received.');
+        throw new Error('Login failed: No access token received.');
+      }
+    } catch (error) {
+      toast.error('Invalid credentials! Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,7 +80,7 @@ export default function Login() {
               Forgot password?
             </a>
           </div>
-          <Button type='submit' fullWidth>
+          <Button type='submit' fullWidth isLoading={isLoading}>
             Sign In
           </Button>
         </form>

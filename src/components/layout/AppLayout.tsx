@@ -12,10 +12,12 @@ interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isDarkMode, setDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const locale = useLocale();
   const isUrdu = locale === 'ur';
 
   useEffect(() => {
+    setMounted(true);
     // Check screen size on mount
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -31,18 +33,41 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     // Load persisted theme preference
     const savedTheme = localStorage.getItem('theme');
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && systemTheme)) {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    } else {
-      setDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    }
+    const initialTheme = savedTheme || (systemTheme ? 'dark' : 'light');
+    const isDark = initialTheme === 'dark' || document.documentElement.classList.contains('dark');
 
-    // Window resize listener
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    setDarkMode(isDark);
+    // if (savedTheme === 'dark' || (!savedTheme && systemTheme)) {
+    //   setDarkMode(true);
+    //   document.documentElement.classList.add('dark');
+    // } else {
+    //   setDarkMode(false);
+    //   document.documentElement.classList.remove('dark');
+    // }
+
+     // Listen for system theme changes
+     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+     const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+       if (!localStorage.getItem('theme')) {
+         if (e.matches) {
+           setDarkMode(true);
+           document.documentElement.classList.add('dark');
+         } else {
+           setDarkMode(false);
+           document.documentElement.classList.remove('dark');
+         }
+       }
+     };
+ 
+     mediaQuery.addEventListener('change', handleSystemThemeChange);
+ 
+     // Window resize listener
+     window.addEventListener('resize', handleResize);
+     
+     return () => {
+       window.removeEventListener('resize', handleResize);
+       mediaQuery.removeEventListener('change', handleSystemThemeChange);
+     };
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
@@ -58,6 +83,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       localStorage.setItem('theme', 'light');
     }
   };
+
+  if (!mounted) {
+    return null; // or return a loading state
+  }
 
   return (
     <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden ${isUrdu ? 'font-urdu' : ''}`}>

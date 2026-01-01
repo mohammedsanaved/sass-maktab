@@ -4,10 +4,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
-  TableContainer,
+  Table,
   TableHead,
   TableRow,
-  TableHeaderCell,
+  Th,
   TableCell,
   Badge,
   Button,
@@ -562,14 +562,14 @@ export default function DashboardPage() {
           </div>
 
           <div className='flex-1 min-h-0'>
-            <TableContainer className='border-none shadow-none h-full'>
+            <Table className='border-none shadow-none h-full'>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Applicant</TableHeaderCell>
-                  <TableHeaderCell>Parents Contact</TableHeaderCell>
-                  <TableHeaderCell>Proposed Class</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
-                  <TableHeaderCell>Action</TableHeaderCell>
+                  <Th>Applicant</Th>
+                  <Th>Parents Contact</Th>
+                  <Th>Proposed Class</Th>
+                  <Th>Status</Th>
+                  <Th>Action</Th>
                 </TableRow>
               </TableHead>
               <tbody>
@@ -674,7 +674,7 @@ export default function DashboardPage() {
                   </TableRow>
                 )}
               </tbody>
-            </TableContainer>
+            </Table>
           </div>
 
           {/* Pagination Controls */}

@@ -128,12 +128,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         <div className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-700 transition-all duration-300 ${isSidebarOpen ? 'justify-center px-4' : 'justify-center px-2'}`}>
           {isSidebarOpen ? (
-            <h1 className="text-2xl font-bold text-primary-600 tracking-tighter whitespace-nowrap overflow-hidden">
-              Salah<span className="text-gray-600 dark:text-gray-300">SaaS</span>
+            <h1 className="text-2xl font-bold text-primary-500 tracking-tighter whitespace-nowrap overflow-hidden">
+              SalahSaaS
             </h1>
           ) : (
-             <h1 className="text-2xl font-bold text-primary-600 tracking-tighter">
-              S<span className="text-gray-600 dark:text-gray-300">S</span>
+             <h1 className="text-2xl font-bold text-primary-500 tracking-tighter">
+              SS
             </h1>
           )}
         </div>
