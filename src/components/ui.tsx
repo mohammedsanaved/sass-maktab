@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 uppercase tracking-wider shadow-sm disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed';
 
     const sizeStyles = {
       sm: 'px-3 py-1.5 text-xs',
@@ -43,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       contained: {
         primary:
-          'bg-primary-600 hover:bg-primary-700 text-white shadow-md active:shadow-sm focus:ring-primary-500',
+          'bg-primary-100 hover:bg-primary-700 text-white shadow-md active:shadow-sm',
         secondary:
           'bg-secondary-500 hover:bg-secondary-600 text-white shadow-md active:shadow-sm focus:ring-secondary-500',
         danger:
@@ -165,9 +165,7 @@ export const Card: React.FC<{ children?: ReactNode; className?: string }> = ({
   children,
   className = '',
 }) => (
-  <div
-    className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 ${className}`}
-  >
+  <div className={`bg-background rounded-xl shadow-md p-6 ${className}`}>
     {children}
   </div>
 );

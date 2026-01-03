@@ -32,8 +32,8 @@ export const Settings = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
-      <p className="text-gray-500 dark:text-gray-400">Manage your institution's configuration and resources.</p>
+      <h2 className="text-2xl font-bold text-primary-500">Settings</h2>
+      <p className="text-primary">Manage your institution's configuration and resources.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {settingCards.map((card) => (

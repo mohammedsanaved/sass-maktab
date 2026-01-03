@@ -271,43 +271,68 @@ export default function DashboardPage() {
       {/* Header & Filter Section */}
       <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
         <div>
-          <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>
+          <h2 className='text-2xl font-bold text-foreground'>
             Dashboard Overview
           </h2>
-          <p className='text-gray-500 dark:text-gray-400'>
+          <p className='text-primary-200'>
             Key metrics for {months[selectedMonth]} {selectedYear}
           </p>
         </div>
+        {/* <div className='p-4'>
+          <p className='text-foreground'>This is the default text color.</p>
+
+          <button className='bg-primary-500 hover:bg-primary-600 text-white font-bold py-2 px-4 rounded'>
+            Primary Button
+          </button>
+
+          <div className='mt-4 p-4 bg-primary-50 border border-primary-100 rounded-md'>
+            <p className='text-primary-700'>
+              This is a notice with a light primary background.
+            </p>
+          </div>
+
+          <p className='mt-4 text-secondary-500'>
+            This text uses the secondary color.
+          </p>
+        </div> */}
 
         <div className='flex flex-wrap items-center gap-3'>
           <div className='relative'>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className='h-10 pl-9 pr-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary-500 outline-none appearance-none cursor-pointer'
+              className='h-10 pl-9 pr-4 rounded-lg text-sm border-primary-700 border  outline-none appearance-none cursor-pointer'
             >
               {months.map((m, idx) => (
-                <option key={idx} value={idx}>
+                <option
+                  key={idx}
+                  value={idx}
+                  className='text-foreground bg-background'
+                >
                   {m}
                 </option>
               ))}
             </select>
-            <Calendar className='w-4 h-4 absolute left-3 top-3 text-gray-500 pointer-events-none' />
+            <Calendar className='w-4 h-4 absolute left-3 top-3 text-primary pointer-events-none' />
           </div>
 
           <div className='relative'>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className='h-10 pl-9 pr-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary-500 outline-none appearance-none cursor-pointer'
+              className='h-10 pl-9 pr-4 rounded-lg text-sm border-primary-700 border  outline-none appearance-none cursor-pointer'
             >
               {[2023, 2024, 2025].map((y) => (
-                <option key={y} value={y}>
+                <option
+                  key={y}
+                  value={y}
+                  className='text-foreground bg-background'
+                >
                   {y}
                 </option>
               ))}
             </select>
-            <Filter className='w-4 h-4 absolute left-3 top-3 text-gray-500 pointer-events-none' />
+            <Filter className='w-4 h-4 absolute left-3 top-3 text-primary pointer-events-none' />
           </div>
         </div>
       </div>
@@ -315,13 +340,13 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {/* Card 1: Student Composition */}
-        <Card className='flex flex-col justify-between border-l-4 border-primary-500'>
+        <Card className='flex flex-col justify-between border-l-4 border-primary'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
                 Total Students
               </p>
-              <h3 className='text-3xl font-bold text-gray-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground  mt-1'>
                 {overview?.totalStudents ?? 0}
               </h3>
             </div>
@@ -331,7 +356,7 @@ export default function DashboardPage() {
           </div>
           <div className='mt-4 flex gap-4 text-xs font-medium text-gray-500'>
             <span className='flex items-center'>
-              <span className='w-2 h-2 rounded-full bg-blue-500 mr-1'></span>{' '}
+              <span className='w-2 h-2 rounded-full bg-Dashboard Overviewblue-500 mr-1'></span>{' '}
               {overview?.hafizCount ?? 0} Hafiz
             </span>
             <span className='flex items-center'>
@@ -348,7 +373,7 @@ export default function DashboardPage() {
               <p className='text-sm font-medium text-gray-500'>
                 Revenue ({shortMonth})
               </p>
-              <h3 className='text-3xl font-bold text-gray-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground mt-1'>
                 ${overview?.collectedFee.toLocaleString() ?? 0}
               </h3>
             </div>
@@ -395,7 +420,7 @@ export default function DashboardPage() {
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>Total Classes</p>
-              <h3 className='text-3xl font-bold text-purple-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground mt-1'>
                 {overview?.classCount ?? 0}
               </h3>
             </div>
@@ -408,17 +433,17 @@ export default function DashboardPage() {
             {overview?.classCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card className='flex flex-col justify-between border-l-4 border-blue-400'>
+        <Card className='flex flex-col justify-between border-l-4 border-yellow-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
                 New Admissions
               </p>
-              <h3 className='text-3xl font-bold text-gray-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground mt-1'>
                 +{overview?.newAdmissionsCount ?? 0}
               </h3>
             </div>
-            <div className='p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-500'>
+            <div className='p-2 bg-yellow-100 dark:bg-yellow-500 rounded-lg text-yellow-100'>
               <TrendingUp size={20} />
             </div>
           </div>
@@ -433,11 +458,11 @@ export default function DashboardPage() {
               <p className='text-sm font-medium text-gray-500'>
                 Total Teachers
               </p>
-              <h3 className='text-3xl font-bold text-gray-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground mt-1'>
                 {overview?.teacherCount ?? 0}
               </h3>
             </div>
-            <div className='p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-500'>
+            <div className='p-2 bg-blue-100 dark:bg-blue-500 rounded-lg text-blue-900'>
               <Users size={20} />
             </div>
           </div>
@@ -446,17 +471,17 @@ export default function DashboardPage() {
             {overview?.teacherCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card className='flex flex-col justify-between border-l-4 border-yellow-400'>
+        <Card className='flex flex-col justify-between border-l-4 border-cyan-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
                 Total TimeSlots
               </p>
-              <h3 className='text-3xl font-bold text-yellow-800 dark:text-white mt-1'>
+              <h3 className='text-3xl font-bold text-foreground mt-1'>
                 {overview?.timeSlotsCount ?? 0}
               </h3>
             </div>
-            <div className='p-2 bg-blue-100 dark:bg-yellow-900 rounded-lg text-yellow-500'>
+            <div className='p-2 bg-cyan-500 dark:bg-cyan-100 rounded-lg text-cyan-500'>
               <Clock size={20} />
             </div>
           </div>
@@ -472,7 +497,7 @@ export default function DashboardPage() {
         {/* Attendance Status (Pie Chart) */}
         <Card className='xl:col-span-1'>
           <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-lg font-bold text-gray-800 dark:text-white flex items-center'>
+            <h3 className='text-lg font-bold text-foreground flex items-center'>
               <PieChartIcon size={18} className='mr-2 text-primary-500' />
               Attendance Status
             </h3>
@@ -539,10 +564,10 @@ export default function DashboardPage() {
         <Card className='xl:col-span-2 flex flex-col h-full overflow-hidden'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2'>
             <div>
-              <h3 className='text-lg font-bold text-gray-800 dark:text-white'>
+              <h3 className='text-lg font-bold text-primary-500'>
                 Admission Applications
               </h3>
-              <p className='text-xs text-gray-500'>
+              <p className='text-xs text-primary-200'>
                 Manage pending and recent applications
               </p>
             </div>

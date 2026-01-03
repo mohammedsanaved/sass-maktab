@@ -119,8 +119,8 @@ export const Dashboard = () => {
       {/* Header & Filter Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h2>
-          <p className="text-gray-500 dark:text-gray-400">Key metrics for {months[selectedMonth]} {selectedYear}</p>
+          <h2 className="text-2xl font-bold text-background">Dashboard Overview</h2>
+          <p className="text-primary-200">Key metrics for {months[selectedMonth]} {selectedYear}</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">

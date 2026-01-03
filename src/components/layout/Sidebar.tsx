@@ -34,8 +34,8 @@ const SidebarItem = ({
       collapsed ? 'justify-center px-2' : 'px-6'
     } ${
       active
-        ? 'bg-primary-500 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-r-4 border-primary-600 rtl:border-r-0 rtl:border-l-4'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        ? 'bg-primary-500 text-primary-50 border-r-4 border-primary-500 rtl:border-r-0 rtl:border-l-4'
+        : 'text-foreground hover:bg-primary-50'
     }`}
   >
     <Icon className={`w-5 h-5 ${collapsed ? '' : 'me-3 rtl:ml-3 rtl:mr-0'}`} />
@@ -59,23 +59,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
             ? 'w-64 translate-x-0'
             : 'w-0 -translate-x-full md:w-20 md:translate-x-0'
         } 
-        fixed z-30 inset-y-0 start-0 bg-white dark:bg-gray-800 shadow-lg 
+        fixed z-30 inset-y-0 start-0 shadow-lg 
         transform transition-all duration-300 ease-in-out
-        md:relative flex flex-col no-print border-e dark:border-gray-700
+        md:relative flex flex-col no-print dark:border-primary-700
       `}
     >
       <div
-        className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-700 transition-all duration-300 ${
+        className={`flex items-center h-16 border-primary-100 dark:border-primary-700 transition-all duration-300 ${
           isSidebarOpen ? 'justify-center px-4' : 'justify-center px-2'
         }`}
       >
         {isSidebarOpen ? (
           <h1 className='text-2xl font-bold text-primary-600 tracking-tighter whitespace-nowrap overflow-hidden'>
-            Salah<span className='text-gray-600 dark:text-gray-300'>SaaS</span>
+            Salah<span className='text-foreground'>SaaS</span>
           </h1>
         ) : (
           <h1 className='text-2xl font-bold text-primary-600 tracking-tighter'>
-            S<span className='text-gray-600 dark:text-gray-300'>S</span>
+            S<span className='text-foreground'>S</span>
           </h1>
         )}
       </div>
@@ -118,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
         />
       </nav>
 
-      <div className='p-4 border-t border-gray-100 dark:border-gray-700'>
+      <div className='p-4 border-t border-primary-100 dark:border-primary-700'>
         <Link
           href='/login'
           className={`flex items-center transition-colors rounded-md text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 
