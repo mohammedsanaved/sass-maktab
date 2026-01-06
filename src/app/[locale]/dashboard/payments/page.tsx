@@ -12,8 +12,9 @@ import {
   TableCell,
   Select,
   Modal,
+  Card,
 } from '@/components/ui';
-import { Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 // Define interfaces based on API response
 interface StudentPaymentInfo {
@@ -37,6 +38,8 @@ interface TimeSlot {
   id: string;
   label: string;
 }
+
+import { apiFetch } from '@/lib/api';
 
 const PaymentsPage = () => {
   const [students, setStudents] = useState<StudentPaymentInfo[]>([]);
@@ -76,7 +79,7 @@ const PaymentsPage = () => {
     });
 
     try {
-      const response = await fetch(`/api/payments?${params}`);
+      const response = await apiFetch(`/api/payments?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch payment data');
       }
@@ -94,8 +97,8 @@ const PaymentsPage = () => {
   const fetchFilters = useCallback(async () => {
     try {
       const [classesRes, timeslotsRes] = await Promise.all([
-        fetch('/api/settings/classes'),
-        fetch('/api/settings/timeslots'),
+        apiFetch('/api/settings/classes'),
+        apiFetch('/api/settings/timeslots'),
       ]);
       if (classesRes.ok) setClassLevels(await classesRes.json());
       if (timeslotsRes.ok) setTimeSlots(await timeslotsRes.json());
@@ -127,9 +130,8 @@ const PaymentsPage = () => {
     }
 
     try {
-      const response = await fetch('/api/payments', {
+      const response = await apiFetch('/api/payments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: selectedStudent.id,
           amount: parseFloat(paymentAmount),
@@ -169,52 +171,54 @@ const PaymentsPage = () => {
       <h1 className='text-2xl font-bold mb-6'>Fee Payments</h1>
 
       {/* Filters */}
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-6'>
-        <TextField
-          icon={Search}
-          label='Search by name or roll no...'
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select
-          value={classId}
-          onChange={(e) => setClassId(e.target.value)}
-          options={[
-            { value: '', label: 'All Classes' },
-            ...classLevels.map((c) => ({ value: c.id, label: c.name })),
-          ]}
-        />
-        <Select
-          value={timeSlotId}
-          onChange={(e) => setTimeSlotId(e.target.value)}
-          options={[
-            { value: '', label: 'All Time Slots' },
-            ...timeSlots.map((t) => ({ value: t.id, label: t.label })),
-          ]}
-        />
-        <div className='flex items-center space-x-2'>
-          <Button
-            variant={status === 'ALL' ? 'contained' : 'outlined'}
-            onClick={() => setStatus('ALL')}
-          >
-            All
-          </Button>
-          <Button
-            variant={status === 'PAID' ? 'contained' : 'outlined'}
-            color='success'
-            onClick={() => setStatus('PAID')}
-          >
-            Paid
-          </Button>
-          <Button
-            variant={status === 'UNPAID' ? 'contained' : 'outlined'}
-            color='danger'
-            onClick={() => setStatus('UNPAID')}
-          >
-            Unpaid
-          </Button>
+      <Card className='mb-6'>
+        <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+          <TextField
+            icon={Search}
+            label='Search by name or roll no...'
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Select
+            value={classId}
+            onChange={(e) => setClassId(e.target.value)}
+            options={[
+              { value: '', label: 'All Classes' },
+              ...classLevels.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+          <Select
+            value={timeSlotId}
+            onChange={(e) => setTimeSlotId(e.target.value)}
+            options={[
+              { value: '', label: 'All Time Slots' },
+              ...timeSlots.map((t) => ({ value: t.id, label: t.label })),
+            ]}
+          />
+          <div className='flex items-center space-x-2'>
+            <Button
+              variant={status === 'ALL' ? 'contained' : 'outlined'}
+              onClick={() => setStatus('ALL')}
+            >
+              All
+            </Button>
+            <Button
+              variant={status === 'PAID' ? 'contained' : 'outlined'}
+              color='success'
+              onClick={() => setStatus('PAID')}
+            >
+              Paid
+            </Button>
+            <Button
+              variant={status === 'UNPAID' ? 'contained' : 'outlined'}
+              color='danger'
+              onClick={() => setStatus('UNPAID')}
+            >
+              Unpaid
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Table */}
       {isLoading ? (
@@ -222,7 +226,7 @@ const PaymentsPage = () => {
       ) : error ? (
         <p className='text-red-500'>{error}</p>
       ) : (
-        <div className='bg-white rounded-lg shadow'>
+        <Card className='p-0 overflow-hidden'>
           <Table>
             <TableHead>
               <TableRow>
@@ -237,9 +241,7 @@ const PaymentsPage = () => {
             </TableHead>
             <TableBody>
               {students.map((student) => {
-                const paymentStatus = getPaymentStatus(
-                  student.lastFeePaidMonth
-                );
+                const paymentStatus = getPaymentStatus(student.lastFeePaidMonth);
                 return (
                   <TableRow key={student.id}>
                     <TableCell>{student.rollNumber}</TableCell>
@@ -270,11 +272,11 @@ const PaymentsPage = () => {
               })}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {/* Pagination Controls */}
-      <div className='flex justify-between items-center mt-6'>
+      {/* <div className='flex justify-between items-center mt-6'>
         <Button onClick={() => setPage((p) => p - 1)} disabled={page <= 1}>
           Previous
         </Button>
@@ -287,7 +289,23 @@ const PaymentsPage = () => {
         >
           Next
         </Button>
-      </div>
+      </div> */}
+      <div className="px-6 py-4 flex items-center justify-between">
+            {/* <span className="text-sm text-gray-500">
+                Showing {Math.min(students.length, (page - 1) * itemsPerPage + 1)} to {Math.min(students.length, page * itemsPerPage)} of {students.length} students
+            </span> */}
+            <span className="text-sm text-gray-500">
+          Page {page} of {totalPages}
+        </span>
+            <div className="flex gap-2">
+                <Button variant="outlined" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                    <ChevronLeft size={16} />
+                </Button>
+                <Button variant="outlined" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                    <ChevronRight size={16} />
+                </Button>
+            </div>
+        </div>
 
       {/* Pay Fees Modal */}
       <Modal

@@ -115,6 +115,8 @@ const months = [
 
 const ITEMS_PER_PAGE = 5;
 
+import { apiFetch } from '@/lib/api';
+
 export default function DashboardPage() {
   const now = useMemo(() => new Date(), []);
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
@@ -150,10 +152,10 @@ export default function DashboardPage() {
     const load = async () => {
       try {
         const [overviewRes, attendanceRes] = await Promise.all([
-          fetch(
+          apiFetch(
             `/api/dashboard/overview?year=${selectedYear}&month=${selectedMonth}`
           ),
-          fetch('/api/dashboard/attendencestatus'),
+          apiFetch('/api/dashboard/attendencestatus'),
         ]);
 
         if (!overviewRes.ok) throw new Error('Failed to load overview');
@@ -199,7 +201,7 @@ export default function DashboardPage() {
           params.set('status', tableStatusFilter);
         }
 
-        const res = await fetch(
+        const res = await apiFetch(
           `/api/dashboard/admissionapplications?${params.toString()}`
         );
         if (!res.ok) throw new Error('Failed to load applications');
@@ -231,11 +233,8 @@ export default function DashboardPage() {
     newStatus: AdmissionStatus
   ) => {
     try {
-      const res = await fetch('/api/dashboard/admissionapplications', {
+      const res = await apiFetch('/api/dashboard/admissionapplications', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ studentId, status: newStatus }),
       });
 
@@ -340,7 +339,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {/* Card 1: Student Composition */}
-        <Card className='flex flex-col justify-between border-l-4 border-primary'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-primary'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -367,7 +366,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 2: Financial Health */}
-        <Card className='flex flex-col justify-between border-l-4 border-green-500'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-green-500'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -396,7 +395,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 3: Defaulters */}
-        <Card className='flex flex-col justify-between border-l-4 border-red-500'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-red-500'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -416,7 +415,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 4: Classes */}
-        <Card className='flex flex-col justify-between border-l-4 border-purple-400'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-purple-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>Total Classes</p>
@@ -433,7 +432,7 @@ export default function DashboardPage() {
             {overview?.classCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card className='flex flex-col justify-between border-l-4 border-yellow-400'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-yellow-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -452,7 +451,7 @@ export default function DashboardPage() {
             {overview?.newAdmissionsCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card className='flex flex-col justify-between border-l-4 border-blue-400'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-blue-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -471,7 +470,7 @@ export default function DashboardPage() {
             {overview?.teacherCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card className='flex flex-col justify-between border-l-4 border-cyan-400'>
+        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-cyan-400'>
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -564,7 +563,7 @@ export default function DashboardPage() {
         <Card className='xl:col-span-2 flex flex-col h-full overflow-hidden'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2'>
             <div>
-              <h3 className='text-lg font-bold text-primary-500'>
+              <h3 className='text-lg font-bold text-foreground'>
                 Admission Applications
               </h3>
               <p className='text-xs text-primary-200'>
@@ -573,7 +572,7 @@ export default function DashboardPage() {
             </div>
             <div className='flex items-center gap-2'>
               <select
-                className='text-xs border border-gray-300 dark:border-gray-600 rounded-md p-1.5 outline-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:border-primary-500'
+                className='text-xs rounded-md border  p-1.5 outline-none bg-background text-foreground focus:border-primary-500'
                 value={tableStatusFilter}
                 onChange={handleTableStatusFilterChange}
               >
@@ -602,11 +601,11 @@ export default function DashboardPage() {
                   <TableRow key={student.id}>
                     <TableCell>
                       <Link href={`/students/${student.id}`} className='group'>
-                        <div className='font-medium text-sm text-gray-900 dark:text-gray-100 group-hover:text-primary-600 transition-colors'>
+                        <div className='font-medium text-sm text-foreground transition-colors group-hover:text-primary-500'>
                           {student.studentName}
                         </div>
                         {student.rollNumber && (
-                          <div className='text-xs text-gray-500'>
+                          <div className='text-xs text-gray-500 group-hover:text-primary-500 transition-colors'>
                             {student.rollNumber}
                           </div>
                         )}
@@ -614,7 +613,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-col'>
-                        <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        <span className='text-sm font-medium text-foreground'>
                           {student.fatherName ?? '—'}
                         </span>
                         <span className='text-xs text-gray-500 flex items-center mt-0.5'>
@@ -624,7 +623,7 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-col'>
-                        <div className='flex items-center text-sm font-medium text-gray-700 dark:text-gray-200'>
+                        <div className='flex items-center text-sm font-medium text-foreground'>
                           <BookOpen
                             size={12}
                             className='mr-1.5 text-primary-500'

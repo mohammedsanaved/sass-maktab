@@ -13,6 +13,7 @@ import {
   TableBody,
 } from '@/components/ui';
 import { Edit, Trash2, Plus } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface ClassLevel {
   id: string;
@@ -32,17 +33,9 @@ export default function ManageClasses() {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const response = await fetch('/api/settings/classes', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: '',
-          },
-        });
-        console.log('Classes response:', response);
-        console.log('Classes response status:', response.status);
+        const response = await apiFetch('/api/settings/classes');
         if (!response.ok) throw new Error('Failed to fetch classes');
         const data = await response.json();
-        console.log('Classes data:', data);
         setClasses(data);
       } catch (error) {
         console.error('Error fetching classes:', error);
@@ -69,22 +62,20 @@ export default function ManageClasses() {
     try {
       let response;
       if (editingClass) {
-        response = await fetch(`/api/settings/classes`, {
+        response = await apiFetch(`/api/settings/classes`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingClass.id, ...classData }),
         });
       } else {
-        response = await fetch(`/api/settings/classes`, {
+        response = await apiFetch(`/api/settings/classes`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(classData),
         });
       }
 
       if (!response.ok) throw new Error('Failed to save class');
       const updatedClasses = await (
-        await fetch('/api/settings/classes')
+        await apiFetch('/api/settings/classes')
       ).json();
       setClasses(updatedClasses);
     } catch (error) {
@@ -100,9 +91,8 @@ export default function ManageClasses() {
       )
     ) {
       try {
-        const response = await fetch(`/api/settings/classes`, {
+        const response = await apiFetch(`/api/settings/classes`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete class');
@@ -117,9 +107,7 @@ export default function ManageClasses() {
     <div className='space-y-6'>
       <div className='flex items-center justify-between'>
         <div>
-          <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>
-            Manage Classes
-          </h2>
+          <h2 className='text-2xl font-bold text-foreground'>Manage Classes</h2>
           <p className='text-gray-500 text-sm'>
             Create and update class levels.
           </p>
@@ -127,10 +115,11 @@ export default function ManageClasses() {
       </div>
 
       <Card className='p-0 overflow-hidden'>
-        <div className='p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end'>
+        <div className='p-4 border-none flex justify-end'>
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
+            variant='text'
           >
             {' '}
             Add Class

@@ -90,17 +90,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
-          to='/students'
+          to='/dashboard/students'
           icon={GraduationCap}
           label={t('students')}
-          active={pathname.startsWith('/students')}
+          active={pathname.startsWith('/dashboard/students')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
-          to='/teachers'
+          to='/dashboard/teachers'
           icon={Users}
           label={t('teachers')}
-          active={pathname.startsWith('/teachers')}
+          active={pathname.startsWith('/dashboard/teachers')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}

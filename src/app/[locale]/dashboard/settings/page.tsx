@@ -43,7 +43,8 @@ export default function SettingsPage() {
         {settingCards.map((card) => (
           <Card
             key={card.title}
-            className='cursor-pointer hover:shadow-lg transition-shadow group relative overflow-hidden'
+            variant='neubrutal'
+            className='cursor-pointer group relative overflow-hidden'
           >
             <Link
               href={card.href}
@@ -56,7 +57,7 @@ export default function SettingsPage() {
                   <card.icon size={24} />
                 </div>
                 <div>
-                  <h3 className='text-lg font-bold text-gray-800 dark:text-white group-hover:text-primary-600 transition-colors'>
+                  <h3 className='text-lg font-bold text-foreground group-hover:text-primary-600 transition-colors'>
                     {card.title}
                   </h3>
                   <p className='text-sm text-gray-500 mt-1'>

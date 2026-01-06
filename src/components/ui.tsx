@@ -63,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       },
       text: {
         primary:
-          'text-primary-600 hover:bg-primary-50 focus:ring-primary-500 shadow-none',
+          'text-primary-500 hover:bg-primary-100 focus:ring-primary-500 shadow-none',
         secondary:
           'text-secondary-500 hover:bg-secondary-50 focus:ring-secondary-500 shadow-none',
         danger: 'text-red-600 hover:bg-red-50 focus:ring-red-500 shadow-none',
@@ -126,7 +126,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
         <input
           ref={ref}
           placeholder=' '
-          className={`peer w-full h-12 bg-transparent text-gray-900 dark:text-gray-100 placeholder-transparent border-b-2 
+          className={`peer w-full h-12 bg-transparent text-foreground placeholder-transparent border-b-2 
           ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
           focus:outline-none focus:border-primary-500 
           ${Icon ? 'pl-10' : 'pl-1'}`}
@@ -161,14 +161,24 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
 TextField.displayName = 'TextField';
 
 // --- Card ---
-export const Card: React.FC<{ children?: ReactNode; className?: string }> = ({
+interface CardProps {
+  children?: ReactNode;
+  className?: string;
+  variant?: 'standard' | 'neubrutal';
+}
+
+export const Card: React.FC<CardProps> = ({
   children,
   className = '',
-}) => (
-  <div className={`bg-background rounded-xl shadow-md p-6 ${className}`}>
-    {children}
-  </div>
-);
+  variant = 'standard',
+}) => {
+  const baseStyles =
+    variant === 'neubrutal'
+      ? 'neubrutal-card'
+      : 'bg-background rounded-xl shadow-md';
+
+  return <div className={`${baseStyles} p-6 ${className}`}>{children}</div>;
+};
 
 // --- Table Components ---
 export const Table: React.FC<{ children?: ReactNode; className?: string }> = ({
@@ -176,20 +186,20 @@ export const Table: React.FC<{ children?: ReactNode; className?: string }> = ({
   className = '',
 }) => (
   <div
-    className={`overflow-x-auto rounded-lg shadow border border-gray-200 dark:border-gray-700 ${className}`}
+    className={`overflow-x-auto rounded-lg shadow border border-primary-700 ${className}`}
   >
-    <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800'>
+    <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-background'>
       {children}
     </table>
   </div>
 );
 
 export const TableHead: React.FC<{ children?: ReactNode }> = ({ children }) => (
-  <thead className='bg-gray-50 dark:bg-gray-700'>{children}</thead>
+  <thead className='text-foreground font-semibold'>{children}</thead>
 );
 
 export const TableBody: React.FC<{ children?: ReactNode }> = ({ children }) => (
-  <tbody>{children}</tbody>
+  <tbody className='bg-background'>{children}</tbody>
 );
 
 export const TableRow: React.FC<
@@ -198,16 +208,13 @@ export const TableRow: React.FC<
     className?: string;
   } & React.HTMLAttributes<HTMLTableRowElement>
 > = ({ children, className = '', ...props }) => (
-  <tr
-    className={`hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors ${className}`}
-    {...props}
-  >
+  <tr className={`transition-colors ${className}`} {...props}>
     {children}
   </tr>
 );
 
 export const Th: React.FC<{ children?: ReactNode }> = ({ children }) => (
-  <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider'>
+  <th className='px-6 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wide'>
     {children}
   </th>
 );
@@ -219,7 +226,7 @@ export const TableCell: React.FC<
   } & React.TdHTMLAttributes<HTMLTableCellElement>
 > = ({ children, className = '', ...props }) => (
   <td
-    className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 ${className}`}
+    className={`px-6 py-4 whitespace-nowrap text-sm text-foreground ${className}`}
     {...props}
   >
     {children}
@@ -234,7 +241,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ options, className = '', ...props }, ref) => {
     const baseStyles =
-      'w-full h-12 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm';
+      'w-full h-12 px-3 py-2 bg-background border border-gray-300 border-primary-500 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm';
 
     return (
       <select ref={ref} className={`${baseStyles} ${className}`} {...props}>
@@ -253,20 +260,43 @@ Select.displayName = 'Select';
 interface BadgeProps {
   children?: ReactNode;
   color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple';
+  size?: 'sm' | 'md';
+  variant?: 'solid' | 'soft';
 }
-export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue' }) => {
-  const colors = {
-    blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    yellow:
-      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    purple:
-      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+
+export const Badge: React.FC<BadgeProps> = ({
+  children,
+  color = 'blue',
+  size = 'md',
+  variant = 'soft',
+}) => {
+  const variants = {
+    soft: {
+      blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      yellow:
+        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      purple:
+        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    },
+    solid: {
+      blue: 'bg-blue-600 text-white',
+      green: 'bg-green-600 text-white',
+      red: 'bg-red-600 text-white',
+      yellow: 'bg-yellow-600 text-white',
+      purple: 'bg-purple-600 text-white',
+    },
   };
+
+  const sizes = {
+    sm: 'px-1.5 py-0.5 text-[10px]',
+    md: 'px-2 py-0.5 text-xs',
+  };
+
   return (
     <span
-      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colors[color]}`}
+      className={`${sizes[size]} inline-flex leading-5 font-semibold rounded-full ${variants[variant][color]}`}
     >
       {children}
     </span>

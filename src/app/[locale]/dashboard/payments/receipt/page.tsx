@@ -39,11 +39,14 @@ const ReceiptPage = () => {
 
     const fetchReceipt = async () => {
       try {
+        const token = localStorage.getItem('accessToken');
         const params = new URLSearchParams(
           paymentId ? { paymentId } : { studentId: studentId! }
         );
 
-        const response = await fetch(`/api/payments/receipt?${params}`);
+        const response = await fetch(`/api/payments/receipt?${params}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch receipt data');
         }

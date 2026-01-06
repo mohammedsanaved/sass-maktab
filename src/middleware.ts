@@ -14,11 +14,11 @@ export async function middleware(request: NextRequest) {
   // ----------------------------------------------------
   if (pathname.startsWith('/api')) {
     // Define protected API routes
-    const protectedRoutes = ['/api/auth/profile', '/api/settings', '/api/teachers', '/api/teacherswithclassdetails', '/api/students/', '/api/payments/'];
+    const protectedRoutes = ['/api/auth/profile', '/api/settings', '/api/teachers', '/api/teacherswithclassdetails', '/api/students', '/api/payments'];
     const adminRoutes = ['/api/admin'];
-    const teacherRoutes = ['/api/teacher/'];
-    const teacherWithClassDetailsRoutes = ['/api/teacherswithclassdetails/'];
-    const paymentsRoutes = ['/api/payments/'];
+    const teacherRoutes = ['/api/teacher'];
+    const teacherWithClassDetailsRoutes = ['/api/teacherswithclassdetails'];
+    const paymentsRoutes = ['/api/payments'];
 
     const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
     const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
@@ -38,12 +38,15 @@ export async function middleware(request: NextRequest) {
       try {
         const payload = await verifyAccessToken(token);
 
-        if (isAdminRoute && payload.role !== 'ADMIN') {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        // RBAC: ADMIN role has unrestricted access to all dashboard APIs
+        if (payload.role !== 'ADMIN') {
+          if (isAdminRoute) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          }
 
-        if (isTeacherRoute && payload.role !== 'TEACHER') {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          if (isTeacherRoute && payload.role !== 'TEACHER') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          }
         }
 
         // Add user info to headers for downstream use

@@ -13,6 +13,7 @@ import {
   TableBody,
 } from '@/components/ui';
 import { Edit, Trash2, Plus } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface TimeSlot {
   id: string;
@@ -35,7 +36,7 @@ export default function ManageTimeSlots() {
   useEffect(() => {
     const fetchTimeSlots = async () => {
       try {
-        const response = await fetch('/api/settings/timeslots');
+        const response = await apiFetch('/api/settings/timeslots');
         if (!response.ok) throw new Error('Failed to fetch time slots');
         const data = await response.json();
         setTimeSlots(data);
@@ -67,21 +68,19 @@ export default function ManageTimeSlots() {
     try {
       let response;
       if (editingSlot) {
-        response = await fetch(`/api/settings/timeslots`, {
+        response = await apiFetch(`/api/settings/timeslots`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingSlot.id, ...slotData }),
         });
       } else {
-        response = await fetch(`/api/settings/timeslots`, {
+        response = await apiFetch(`/api/settings/timeslots`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(slotData),
         });
       }
       if (!response.ok) throw new Error('Failed to save time slot');
       const updatedSlots = await (
-        await fetch('/api/settings/timeslots')
+        await apiFetch('/api/settings/timeslots')
       ).json();
       setTimeSlots(updatedSlots);
     } catch (error) {
@@ -94,9 +93,8 @@ export default function ManageTimeSlots() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this time slot?')) {
       try {
-        const response = await fetch(`/api/settings/timeslots`, {
+        const response = await apiFetch(`/api/settings/timeslots`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete time slot');
@@ -111,7 +109,7 @@ export default function ManageTimeSlots() {
     <div className='space-y-6'>
       <div className='flex items-center justify-between'>
         <div>
-          <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>
+          <h2 className='text-2xl font-bold text-foreground'>
             Manage Time Slots
           </h2>
           <p className='text-gray-500 text-sm'>
@@ -121,10 +119,11 @@ export default function ManageTimeSlots() {
       </div>
 
       <Card className='p-0 overflow-hidden'>
-        <div className='p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end'>
+        <div className='p-4 border-none flex justify-end'>
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
+            variant='text'
           >
             {' '}
             Add Time Slot

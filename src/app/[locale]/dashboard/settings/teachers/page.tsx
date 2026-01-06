@@ -14,6 +14,7 @@ import {
   TableBody,
 } from '@/components/ui';
 import { Edit, Trash2, Plus, Phone, Mail } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface Teacher {
   id: string;
@@ -37,7 +38,7 @@ export default function ManageTeachers() {
     // Replace with API call
     const fetchTeachers = async () => {
       try {
-        const response = await fetch('/api/teachers');
+        const response = await apiFetch('/api/settings/teachers');
         if (!response.ok) throw new Error('Failed to fetch teachers');
         const data = await response.json();
         setTeachers(data);
@@ -69,15 +70,13 @@ export default function ManageTeachers() {
     try {
       let response;
       if (editingTeacher) {
-        response = await fetch(`/api/teachers`, {
+        response = await apiFetch(`/api/teachers`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: editingTeacher.id, ...teacherData }),
         });
       } else {
-        response = await fetch(`/api/teachers`, {
+        response = await apiFetch(`/api/teachers`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(teacherData),
         });
       }
@@ -85,7 +84,7 @@ export default function ManageTeachers() {
       if (!response.ok) throw new Error('Failed to save teacher');
 
       // Refresh teacher list
-      const updatedTeachers = await (await fetch('/api/teachers')).json();
+      const updatedTeachers = await (await apiFetch('/api/teachers')).json();
       setTeachers(updatedTeachers);
     } catch (error) {
       console.error(error);
@@ -96,9 +95,8 @@ export default function ManageTeachers() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this teacher?')) {
       try {
-        const response = await fetch(`/api/teachers`, {
+        const response = await apiFetch(`/api/teachers`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete teacher');
@@ -113,7 +111,7 @@ export default function ManageTeachers() {
     <div className='space-y-6'>
       <div className='flex items-center justify-between'>
         <div>
-          <h2 className='text-2xl font-bold text-gray-800 dark:text-white'>
+          <h2 className='text-2xl font-bold text-foreground'>
             Manage Teachers
           </h2>
           <p className='text-gray-500 text-sm'>Add or edit teacher profiles.</p>
@@ -121,10 +119,11 @@ export default function ManageTeachers() {
       </div>
 
       <Card className='p-0 overflow-hidden'>
-        <div className='p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end'>
+        <div className='p-4 flex justify-end bg-background border-b border-primary-100'>
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
+            variant='text'
           >
             {' '}
             Add Teacher
@@ -143,7 +142,7 @@ export default function ManageTeachers() {
             {teachers.map((teacher) => (
               <TableRow key={teacher.id}>
                 <TableCell>
-                  <div className='font-medium text-gray-900 dark:text-gray-100'>
+                  <div className='font-medium text-foreground'>
                     {teacher.name}
                   </div>
                 </TableCell>

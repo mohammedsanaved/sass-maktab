@@ -134,6 +134,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   useEffect(() => {
     setMounted(true);
+
+    // Auth Guard: Redirect if no token
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      window.location.href = `/${locale}/login`;
+      return;
+    }
+
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setSidebarOpen(false);
