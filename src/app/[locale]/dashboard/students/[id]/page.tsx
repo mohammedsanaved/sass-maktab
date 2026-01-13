@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, Button, Badge } from '@/components/ui';
 import { 
-  ArrowLeft, Edit, Printer, Phone, User, Home, BookOpen, Clock, Calendar, ShieldAlert, Briefcase, CreditCard, FileText,
+  ArrowLeft, Edit, Printer, Phone, User, Home, BookOpen, Clock, Calendar, ShieldAlert, Briefcase, CreditCard,
   ClipboardList
 } from 'lucide-react';
 import { Student } from '@/types';
@@ -18,23 +18,24 @@ export default function StudentProfilePage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchStudent = async () => {
+    const token = localStorage.getItem('accessToken');
+    try {
+      const res = await fetch(`/api/students/${id}`, {
+           headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+          const data = await res.json();
+          setStudent(data);
+      } else {
+          setStudent(null);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    if (!id) return;
-    const fetchStudent = async () => {
-      const token = localStorage.getItem('accessToken');
-      try {
-        const res = await fetch(`/api/students/${id}`, {
-             headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-            setStudent(await res.json());
-        } else {
-            setStudent(null);
-        }
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    };
-    fetchStudent();
+    if (id) fetchStudent();
   }, [id]);
 
   if (loading) return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>;
@@ -50,10 +51,6 @@ export default function StudentProfilePage() {
     );
   }
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Action Header */}
@@ -63,19 +60,17 @@ export default function StudentProfilePage() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              Student Profile <span className="text-gray-400 font-normal">|</span> <span className="font-urdu text-lg">پروفائل</span>
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              Student Profile <span className="font-normal">|</span> <span className="font-urdu text-lg">پروفائل</span>
             </h2>
             <p className="text-sm text-gray-500">Managing record for {student.studentName}</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outlined" onClick={handlePrint}>
-            <Printer size={18} className="mr-2" /> Print Form
-          </Button>
-          <Button color="primary" onClick={() => router.push(`/dashboard/students/${student.id}/edit`)}>
-            <Edit size={18} className="mr-2" /> Edit Details
-          </Button>
+             {/* Print Button Removed */}
+             <Button color="primary" onClick={() => router.push(`/dashboard/students/${id}/edit`)}>
+                <Edit size={18} className="mr-2" /> Edit Details
+            </Button>
         </div>
       </div>
 
@@ -89,18 +84,17 @@ export default function StudentProfilePage() {
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Full Name / نام</p>
               <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{student.studentName}</h1>
-              <Badge color={student.type === 'HAFIZ' ? 'purple' : 'blue'}>{student.type}</Badge>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Roll Number / رول نمبر</p>
-              <p className="text-xl font-bold text-primary-600">{student.rollNumber}</p>
+              <p className="text-xl font-bold text-primary-600">{student.rollNumber || 'N/A'}</p> 
               <p className="text-xs text-gray-500">GR No: {student.grNumber || 'N/A'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Study Status / تعلیمی حالت</p>
               <div className="pt-1">
                 <Badge color={student.studyStatus === 'REGULAR' ? 'green' : 'yellow'}>
-                   {student.studyStatus}
+                    {student.studyStatus}
                 </Badge>
               </div>
             </div>
@@ -122,14 +116,14 @@ export default function StudentProfilePage() {
               <User size={18} className="mr-2" /> Personal Information <span className="font-urdu ml-auto text-sm text-gray-500">ذاتی معلومات</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-              <InfoItem label="Date of Birth" value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'} icon={Calendar} />
-              <InfoItem label="Gender" value={student.gender === 'M' ? 'Male' : 'Female'} icon={User} />
-              <InfoItem label="Age" value={student.age ? `${student.age} Years` : 'Not Specified'} icon={Clock} />
-              <InfoItem label="Joined At" value={new Date(student.joinedAt).toLocaleDateString()} icon={Calendar} />
-              <div className="md:col-span-2">
-                <InfoItem label="Residential Address" value={student.residence || 'Not Provided'} icon={Home} />
-                <InfoItem label="Permanent Address" value={student.fullPermanentAddress || 'Not Provided'} icon={Home} />
-              </div>
+                <InfoItem label="Date of Birth" value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'} icon={Calendar} />
+                <InfoItem label="Gender" value={student.gender === 'M' ? 'Male' : 'Female'} icon={User} />
+                <InfoItem label="Age" value={student.age ? `${student.age} Years` : 'Not Specified'} icon={Clock} />
+                <InfoItem label="Joined At" value={new Date(student.joinedAt).toLocaleDateString()} icon={Calendar} />
+                <div className="md:col-span-2">
+                    <InfoItem label="Residential Address" value={student.residence || 'Not Provided'} icon={Home} />
+                    <InfoItem label="Permanent Address" value={student.fullPermanentAddress || 'Not Provided'} icon={Home} />
+                </div>
             </div>
           </Card>
 
@@ -139,18 +133,17 @@ export default function StudentProfilePage() {
               <Phone size={18} className="mr-2" /> Family & Contact <span className="font-urdu ml-auto text-sm text-gray-500">خاندانی تفصیلات</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-              <InfoItem label="Father's Name" value={student.fatherName} icon={User} />
-              <InfoItem label="Guardian Profession" value={student.parentGuardianOccupation || 'N/A'} icon={Briefcase} />
-              <InfoItem label="Primary Mobile" value={student.mobile} icon={Phone} link={`tel:${student.mobile}`} />
-              <InfoItem label="Other Contact" value={student.mobileOther || 'N/A'} icon={Phone} />
-              
-              <div className="md:col-span-2 mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                   <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Emergency Contact 1</p>
-                   <p className="text-sm font-medium">{student.emergencyContactName || 'None'}</p>
-                   <p className="text-xs text-gray-500">{student.emergencyContactPhone}</p>
+                <InfoItem label="Father's Name" value={student.fatherName} icon={User} />
+                <InfoItem label="Guardian Profession" value={student.parentGuardianOccupation || 'N/A'} icon={Briefcase} />
+                <InfoItem label="Primary Mobile" value={student.mobile} icon={Phone} link={`tel:${student.mobile}`} />
+                <InfoItem label="Other Contact" value={student.mobileOther || 'N/A'} icon={Phone} />
+                <div className="md:col-span-2 mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Emergency Contact 1</p>
+                    <p className="text-sm font-medium">{student.emergencyContactName || 'None'}</p>
+                    <p className="text-xs text-gray-500">{student.emergencyContactPhone}</p>
+                    </div>
                 </div>
-              </div>
             </div>
           </Card>
         </div>
@@ -167,10 +160,9 @@ export default function StudentProfilePage() {
                   <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <BookOpen size={20} className="text-primary-600" />
                   </div>
-                  <div>
+                  <div className="w-full">
                     <p className="text-xs text-gray-500">Assigned Class</p>
                     <p className="font-bold text-gray-800 dark:text-gray-100">{student.classSession?.classLevel?.name || 'N/A'}</p>
-                    <p className="text-xs text-gray-400">{student.classSession?.sectionName || ''}</p>
                   </div>
                </div>
 
@@ -178,7 +170,7 @@ export default function StudentProfilePage() {
                   <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                     <Clock size={20} className="text-orange-500" />
                   </div>
-                  <div>
+                  <div className="w-full">
                     <p className="text-xs text-gray-500">Time Slot</p>
                     <p className="font-bold text-gray-800 dark:text-gray-100">{student.classSession?.timeSlot?.label || 'N/A'}</p>
                   </div>
@@ -194,22 +186,27 @@ export default function StudentProfilePage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
                 <span className="text-sm text-gray-500">Monthly Fees</span>
-                <span className="font-bold text-lg text-primary-600">${student.monthlyFees}</span>
+                <span className="font-bold text-lg text-primary-600">₹{student.monthlyFees}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
                 <span className="text-sm text-gray-500">Admission Fee</span>
-                <span className="font-medium text-gray-700 dark:text-gray-300">${student.admissionFee || 0}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-300">₹{student.admissionFee || 0}</span>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm text-gray-500">Last Paid</span>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                    {student.lastFeePaidMonth ? new Date(student.lastFeePaidMonth).toLocaleDateString() : 'Never'}
+              <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500">Current Arrears</span>
+                <span className={`font-bold ${student.arrears?.months ? 'text-red-500' : 'text-green-500'}`}>
+                    {student.arrears?.months ? `${student.arrears.months} Months (₹${student.arrears.amount})` : 'Clear'}
                 </span>
               </div>
               
-              <div className="mt-6">
+              <div className="mt-6 flex flex-col gap-2">
+                {student.arrears?.months ? (
+                    <Button fullWidth color="primary" onClick={() => router.push('/dashboard/payments')}>
+                        Pay Arrears Now
+                    </Button>
+                ) : null}
                 <Button fullWidth variant="outlined" color="primary" onClick={() => router.push('/dashboard/payments')}>
-                  View Payment History
+                View Payment History
                 </Button>
               </div>
             </div>

@@ -9,6 +9,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -41,7 +42,7 @@ const SidebarItem = ({
     <Icon className={`w-5 h-5 ${collapsed ? '' : 'me-3 rtl:ml-3 rtl:mr-0'}`} />
     {!collapsed && (
       <span className='font-medium whitespace-nowrap overflow-hidden transition-all duration-300 opacity-100'>
-        {label.split('.')[1].toLocaleUpperCase()}
+        {label}
       </span>
     )}
   </Link>
@@ -49,7 +50,16 @@ const SidebarItem = ({
 
 export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
   const pathname = usePathname();
-  const t = useTranslations('Sidebar');
+  // const t = useTranslations('Sidebar');
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    // Using window.location.href to ensure a full page reload and clear any state
+    // window.location.href = `/${pathname.split('/')[1]}/login`;
+    window.location.href = `/login`;
+    // router.push('/login');
+    // console.log(pathname.split('/'))
+  };
 
   return (
     <aside
@@ -70,13 +80,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
         }`}
       >
         {isSidebarOpen ? (
-          <h1 className='text-2xl font-bold text-primary-600 tracking-tighter whitespace-nowrap overflow-hidden'>
-            Salah<span className='text-foreground'>SaaS</span>
+          <h1 className='text-lg font-bold text-primary-600 tracking-tighter whitespace-nowrap overflow-hidden'>
+            Maktab<span className='text-foreground'>{" "}Muhammadiya</span>
           </h1>
+            // <Image src={"/name-en.png"} alt="Logo" width={50} height={50} className='w-auto h-[20px]' />
         ) : (
-          <h1 className='text-2xl font-bold text-primary-600 tracking-tighter'>
-            S<span className='text-foreground'>S</span>
-          </h1>
+          // <h1 className='text-2xl font-bold text-primary-600 tracking-tighter'>
+          //   S<span className='text-foreground'>S</span>
+          // </h1>
+          <Image src={"/logo.png"} alt="Logo" width={50} height={50} className='w-10 h-10' />
         )}
       </div>
 
@@ -85,46 +97,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
           collapsed={!isSidebarOpen}
           to='/dashboard'
           icon={LayoutDashboard}
-          label={t('dashboard')}
+          label={'Dashboard'}
           active={pathname === '/dashboard'}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
           to='/dashboard/students'
           icon={GraduationCap}
-          label={t('students')}
+          label={'Students'}
           active={pathname.startsWith('/dashboard/students')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
           to='/dashboard/teachers'
           icon={Users}
-          label={t('teachers')}
+          label={'Teachers'}
           active={pathname.startsWith('/dashboard/teachers')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
           to='/dashboard/payments'
           icon={CreditCard}
-          label={t('payments')}
+          label={'Payments'}
           active={pathname.startsWith('/dashboard/payments')}
         />
         <SidebarItem
           collapsed={!isSidebarOpen}
           to='/dashboard/settings'
           icon={Settings}
-          label={t('settings')}
+          label={'Settings'}
           active={pathname.startsWith('/dashboard/settings')}
         />
       </nav>
 
       <div className='p-4 border-t border-primary-100 dark:border-primary-700'>
-        <Link
-          href='/login'
-          className={`flex items-center transition-colors rounded-md text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 
+        <button
+          onClick={handleLogout}
+          className={`flex items-center transition-colors rounded-md text-red-600 bg-red-50 hover:bg-red-100 cursor-pointer dark:bg-red-900/20 
             ${isSidebarOpen ? 'px-4 py-2 w-full' : 'justify-center p-2 w-full'}
           `}
-          title={!isSidebarOpen ? t('logout') : ''}
+          title={!isSidebarOpen ? 'Logout' : ''}
         >
           <LogOut
             className={`w-4 h-4 ${
@@ -134,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
           {isSidebarOpen && (
             <span className='text-sm font-medium'>{'LOGOUT'}</span>
           )}
-        </Link>
+        </button>
       </div>
     </aside>
   );

@@ -71,7 +71,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isUrdu }) => {
-  const t = useTranslations('Header');
+  // const t = useTranslations('Header');
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isUrdu }) => {
             <User className='w-5 h-5' />
           </div>
           <span className='hidden md:block text-sm font-medium text-foreground'>
-            {t('admin')}
+            {"Admin"}  
           </span>
         </div>
       </div>

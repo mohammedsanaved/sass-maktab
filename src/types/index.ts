@@ -20,6 +20,17 @@ export enum StudentStatus {
   OLD = 'OLD'
 }
 
+export enum HafizCategory {
+  FULL_TIME = 'FULL_TIME',
+  HALF_TIME = 'HALF_TIME'
+}
+
+export enum FullTimeSubCategory {
+  HAFIZ_SCHOOL = 'HAFIZ_SCHOOL',
+  BASICS = 'BASICS',
+  FULL_COURSE = 'FULL_COURSE'
+}
+
 export interface ClassLevel {
   id: string;
   name: string;
@@ -44,6 +55,7 @@ export interface ClassSession {
   timeSlotId: string;
   sectionName?: string;
   maxStudents?: number;
+  teacher?: { name: string };
   classLevel?: ClassLevel;
   timeSlot?: TimeSlot;
   classLevelName?: string; // Optional helper for UI
@@ -71,8 +83,8 @@ export interface Student {
   
   // Academic
   type: StudentType;
-  hafizCategory?: string;
-  fullTimeSubCategory?: string;
+  hafizCategory?: HafizCategory | string;
+  fullTimeSubCategory?: FullTimeSubCategory | string;
   previousTraining?: string;
   previousSchool?: string;
   
@@ -100,6 +112,11 @@ export interface Student {
   emergencyContactPhone2?: string;
   
   parentGuardianOccupation?: string;
+  academicYear?: string; // Current/Active enrollment year
+  arrears?: {
+    months: number;
+    amount: number;
+  };
 }
 
 export interface Teacher {

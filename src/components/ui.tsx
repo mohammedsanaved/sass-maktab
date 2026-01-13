@@ -160,6 +160,176 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
 );
 TextField.displayName = 'TextField';
 
+// --- TimeInput (12-hour format with AM/PM) ---
+interface TimeInputProps {
+  label: string;
+  value: string; // Expected format: "HH:mm" (24-hour)
+  onChange: (value: string) => void;
+  error?: boolean;
+  helperText?: string;
+  className?: string;
+  placeholder?: string;
+}
+
+export const TimeInput: React.FC<TimeInputProps> = ({
+  label,
+  value,
+  onChange,
+  error,
+  helperText,
+  className = '',
+  placeholder = '09:00 AM',
+}) => {
+  // Convert 24-hour to 12-hour format
+  const convertTo12Hour = (time24: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
+    if (!time24) return { hour: '', minute: '', period: 'AM' };
+    
+    const [hours, minutes] = time24.split(':');
+    const hour24 = parseInt(hours, 10);
+    const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    
+    return {
+      hour: hour12.toString(),
+      minute: minutes || '00',
+      period,
+    };
+  };
+
+  // Convert 12-hour to 24-hour format
+  const convertTo24Hour = (hour: string, minute: string, period: 'AM' | 'PM'): string => {
+    // Allow empty values - don't convert until both are filled
+    if (!hour && !minute) return '';
+    
+    // Default empty values to allow partial input
+    const hourValue = hour || '12';
+    const minuteValue = minute || '00';
+    
+    let hour24 = parseInt(hourValue, 10);
+    
+    // Handle invalid numbers
+    if (isNaN(hour24)) return '';
+    
+    if (period === 'AM' && hour24 === 12) {
+      hour24 = 0;
+    } else if (period === 'PM' && hour24 !== 12) {
+      hour24 += 12;
+    }
+    
+    return `${hour24.toString().padStart(2, '0')}:${minuteValue.padStart(2, '0')}`;
+  };
+
+  const { hour, minute, period } = convertTo12Hour(value);
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHour = e.target.value;
+    
+    // Allow empty or valid hour (1-12)
+    if (newHour === '') {
+      onChange(''); // Clear the value
+      return;
+    }
+    
+    const hourNum = parseInt(newHour, 10);
+    
+    // Validate hour (1-12)
+    if (hourNum >= 1 && hourNum <= 12) {
+      const time24 = convertTo24Hour(newHour, minute || '00', period);
+      onChange(time24);
+    }
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMinute = e.target.value;
+    
+    // Allow empty or valid minute (0-59)
+    if (newMinute === '') {
+      // Keep hour but clear minute
+      const time24 = convertTo24Hour(hour || '12', '00', period);
+      onChange(time24);
+      return;
+    }
+    
+    const minuteNum = parseInt(newMinute, 10);
+    
+    // Validate minute (0-59)
+    if (minuteNum >= 0 && minuteNum <= 59) {
+      const time24 = convertTo24Hour(hour || '12', newMinute, period);
+      onChange(time24);
+    }
+  };
+
+  const handlePeriodChange = (newPeriod: 'AM' | 'PM') => {
+    const time24 = convertTo24Hour(hour || '12', minute || '00', newPeriod);
+    onChange(time24);
+  };
+
+  return (
+    <div className={`relative mb-4 ${className}`}>
+      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">
+        {label}
+      </label>
+      <div className="flex gap-2 items-center">
+        {/* Hour Input */}
+        <input
+          type="number"
+          min="1"
+          max="12"
+          value={hour}
+          onChange={handleHourChange}
+          placeholder="09"
+          className={`w-16 h-12 px-3 text-center bg-transparent text-foreground border-b-2 
+            ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
+            focus:outline-none focus:border-primary-500`}
+        />
+        <span className="text-foreground text-xl font-bold">:</span>
+        {/* Minute Input */}
+        <input
+          type="number"
+          min="0"
+          max="59"
+          value={minute}
+          onChange={handleMinuteChange}
+          placeholder="00"
+          className={`w-16 h-12 px-3 text-center bg-transparent text-foreground border-b-2 
+            ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
+            focus:outline-none focus:border-primary-500`}
+        />
+        {/* AM/PM Toggle */}
+        <div className="flex border-b-2 border-gray-300 dark:border-gray-600 h-12">
+          <button
+            type="button"
+            onClick={() => handlePeriodChange('AM')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              period === 'AM'
+                ? 'bg-primary-500 text-white'
+                : 'bg-transparent text-foreground hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            AM
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePeriodChange('PM')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              period === 'PM'
+                ? 'bg-primary-500 text-white'
+                : 'bg-transparent text-foreground hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            PM
+          </button>
+        </div>
+      </div>
+      {helperText && (
+        <p className={`text-xs mt-1 ${error ? 'text-red-500' : 'text-gray-500'}`}>
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+};
+
 // --- Card ---
 interface CardProps {
   children?: ReactNode;
@@ -329,34 +499,27 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   if (!isOpen) return null;
   return (
-    <div className='fixed inset-0 z-50 overflow-y-auto'>
-      <div className='flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0'>
-        <div
-          className='fixed inset-0 transition-opacity'
-          aria-hidden='true'
-          onClick={onClose}
-        >
-          <div className='absolute inset-0 bg-gray-500 opacity-75'></div>
+    <div className='fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6'>
+      {/* Overlay */}
+      <div
+        className='fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity'
+        onClick={onClose}
+        aria-hidden='true'
+      />
+
+      {/* Modal Content container to handle centering and sizing */}
+      <div className='relative bg-background rounded-xl shadow-2xl transform transition-all sm:max-w-lg w-full overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]'>
+        <div className='px-6 pt-6 pb-4 overflow-y-auto'>
+          <h3 className='text-xl font-bold text-gray-900 dark:text-white mb-2'>
+            {title}
+          </h3>
+          <div className='mt-4'>{children}</div>
         </div>
-        <span
-          className='hidden sm:inline-block sm:align-middle sm:h-screen'
-          aria-hidden='true'
-        >
-          &#8203;
-        </span>
-        <div className='inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full'>
-          <div className='bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4'>
-            <h3 className='text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4'>
-              {title}
-            </h3>
-            <div className='mt-2'>{children}</div>
+        {actions && (
+          <div className='bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex flex-row-reverse gap-3 border-t border-gray-100 dark:border-gray-700'>
+            {actions}
           </div>
-          {actions && (
-            <div className='bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse'>
-              {actions}
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

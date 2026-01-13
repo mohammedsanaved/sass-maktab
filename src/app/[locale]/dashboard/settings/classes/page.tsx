@@ -12,8 +12,9 @@ import {
   TextField,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 interface ClassLevel {
   id: string;
@@ -29,6 +30,7 @@ export default function ManageClasses() {
   // Form State
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -105,7 +107,10 @@ export default function ManageClasses() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-start gap-2'>
+        <Button variant="outlined" size="sm" onClick={() => router.push('/dashboard/settings')} className="p-2">
+            <ArrowLeft size={20} />
+          </Button>
         <div>
           <h2 className='text-2xl font-bold text-foreground'>Manage Classes</h2>
           <p className='text-gray-500 text-sm'>

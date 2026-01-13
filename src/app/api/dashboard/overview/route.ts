@@ -45,20 +45,46 @@ export async function GET(request: Request) {
       },
     });
 
-    // 4. Revenue in selected Month
-    // Sum of FeePayment amounts
-    const revenueAgg = await prisma.feePayment.aggregate({
-      _sum: {
-        amount: true,
-      },
+    // 4. Revenue in selected Month (Attribution-based)
+    const targetMonthStr = `${year}-${(month + 1).toString().padStart(2, '0')}`;
+    
+    // Fetch all payments that either:
+    // a) Mention this month in paidMonths
+    // b) Are NOT monthly and paid in this month
+    // c) Are monthly, have NO paidMonths, but paid in this month (legacy support)
+    const payments = await prisma.feePayment.findMany({
       where: {
-        paymentDate: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
+        OR: [
+          { paidMonths: { has: targetMonthStr } },
+          {
+            AND: [
+              { paymentType: { not: 'MONTHLY' } },
+              { paymentDate: { gte: startOfMonth, lte: endOfMonth } }
+            ]
+          },
+          {
+            AND: [
+              { paidMonths: { isEmpty: true } },
+              { paymentType: 'MONTHLY' },
+              { paymentDate: { gte: startOfMonth, lte: endOfMonth } }
+            ]
+          }
+        ]
+      }
     });
-    const collectedFee = revenueAgg._sum.amount || 0;
+
+    let collectedFee = 0;
+    payments.forEach(p => {
+      if (p.paymentType === 'MONTHLY' && p.paidMonths && p.paidMonths.length > 0) {
+        // If it's a new record with month tracking, attribute only the proportional amount
+        if (p.paidMonths.includes(targetMonthStr)) {
+          collectedFee += p.amount / p.paidMonths.length;
+        }
+      } else {
+        // Admission, Donation, or legacy Monthly record
+        collectedFee += p.amount;
+      }
+    });
 
     // 5. Unpaid Students
     // Logic: Active students whose lastFeePaidMonth is BEFORE the target month.
@@ -73,15 +99,30 @@ export async function GET(request: Request) {
     // So if selected month is Nov 2025, and lastFeePaidMonth is Oct 2025, they are unpaid.
     // Date comparison: lastFeePaidMonth < startOfMonth
 
-    const unpaidCount = await prisma.student.count({
+    const studentsForUnpaidCheck = await prisma.student.findMany({
       where: {
         isActive: true,
-        OR: [
-          { lastFeePaidMonth: null },
-          { lastFeePaidMonth: { lt: startOfMonth } },
-        ],
+        joinedAt: { lte: endOfMonth }
       },
+      select: {
+          id: true,
+          lastFeePaidMonth: true,
+          feePayments: {
+              where: {
+                  paidMonths: { has: targetMonthStr }
+              },
+              take: 1
+          }
+      }
     });
+    console.log(studentsForUnpaidCheck, "studentsForUnpaidCheck");
+
+    const unpaidCount = studentsForUnpaidCheck.filter(s => {
+        if (s.feePayments.length > 0) return false;
+        if (s.lastFeePaidMonth && s.lastFeePaidMonth >= startOfMonth) return false;
+        return true;
+    }).length;
+    console.log(unpaidCount, "unpaidCount");
 
     // Collection Percentage?
     // Expected fee = sum of monthlyFees of all active students

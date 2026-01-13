@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
     // 3. Build Where Query
     const where: any = {};
 
-    // 3.1 Search (Name or Roll Number)
     if (search) {
       where.OR = [
         { studentName: { contains: search, mode: 'insensitive' } },
@@ -29,8 +28,6 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 3.2 Class & TimeSlot Filter
-    // Because Student -> ClassSession -> ClassLevel/TimeSlot
     if (classId || timeSlotId) {
        where.classSession = {
            ...(classId ? { classLevelId: classId } : {}),
@@ -38,11 +35,6 @@ export async function GET(request: NextRequest) {
        };
     }
 
-    // 3.3 Status Filter (PAID / UNPAID)
-    // "PAID" means paid for the CURRENT month.
-    // "UNPAID" means not paid for the CURRENT month.
-    // Logic: compare lastFeePaidMonth with current month start.
-    // Prisma filters for date comparison:
     const currentMonthStart = new Date();
     currentMonthStart.setDate(1);
     currentMonthStart.setHours(0, 0, 0, 0);
@@ -58,9 +50,6 @@ export async function GET(request: NextRequest) {
         ];
     }
     
-    // Always active students? or all? Assuming active for now unless specified otherwise.
-    // where.isActive = true; 
-
     // 4. Counts for Pagination
     const total = await prisma.student.count({ where });
 
@@ -78,29 +67,66 @@ export async function GET(request: NextRequest) {
         },
         feePayments: {
             orderBy: { paymentDate: 'desc' },
-            take: 1 // Get latest payment just in case needed for UI extras
         }
       },
-      orderBy: { studentName: 'asc' } // Default sort
+      orderBy: { studentName: 'asc' } 
     });
     
-    // 6. Format Response
-    const formattedStudents = students.map((s: any) => ({
-        id: s.id,
-        rollNumber: s.rollNumber,
-        studentName: s.studentName,
-        fatherName: s.fatherName,
-        mobile: s.mobile,
-        monthlyFees: s.monthlyFees,
-        lastFeePaidMonth: s.lastFeePaidMonth,
-        classSession: s.classSession ? {
-            classLevelId: s.classSession.classLevelId,
-            classLevelName: s.classSession.classLevel.name,
-            timeSlotId: s.classSession.timeSlotId,
-            timeSlotLabel: s.classSession.timeSlot.label,
-            sectionName: s.classSession.sectionName
-        } : null
-    }));
+    // 6. Arrears Calculation Logic
+    // Reference start Date: July 1st, 2025
+    const arrearsStartDate = new Date(2025, 6, 1); // July is index 6
+    const referenceDate = new Date(); 
+    referenceDate.setDate(1);
+    referenceDate.setHours(0, 0, 0, 0);
+
+    const formattedStudents = students.map((s: any) => {
+        let arrearsMonths = 0;
+        let arrearsAmount = 0;
+
+        const joinDate = new Date(s.joinedAt);
+        const startCalculationFrom = joinDate > arrearsStartDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : arrearsStartDate;
+        
+        // Collect all paid months across all transactions
+        const allPaidMonths = new Set<string>();
+        s.feePayments.forEach((p: any) => {
+            if (p.paidMonths) {
+                p.paidMonths.forEach((m: string) => allPaidMonths.add(m));
+            }
+        });
+
+        // Loop from startCalculationFrom to referenceDate (current month inclusive)
+        let tempDate = new Date(startCalculationFrom);
+        while (tempDate <= referenceDate) {
+            const monthStr = tempDate.toISOString().substring(0, 7);
+            if (!allPaidMonths.has(monthStr)) {
+                arrearsMonths++;
+                arrearsAmount += s.monthlyFees;
+            }
+            tempDate.setMonth(tempDate.getMonth() + 1);
+        }
+
+        return {
+            id: s.id,
+            rollNumber: s.rollNumber,
+            studentName: s.studentName,
+            fatherName: s.fatherName,
+            mobile: s.mobile,
+            monthlyFees: s.monthlyFees,
+            lastFeePaidMonth: s.lastFeePaidMonth,
+            joinedAt: s.joinedAt,
+            arrears: {
+                months: arrearsMonths,
+                amount: arrearsAmount
+            },
+            classSession: s.classSession ? {
+                classLevelId: s.classSession.classLevelId,
+                classLevelName: s.classSession.classLevel.name,
+                timeSlotId: s.classSession.timeSlotId,
+                timeSlotLabel: s.classSession.timeSlot.label,
+                sectionName: s.classSession.sectionName
+            } : null
+        };
+    });
 
     return NextResponse.json({
       data: formattedStudents,
@@ -123,45 +149,31 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { studentId, amount, months, remarks } = body; 
         
-        // Validation
         if (!studentId || !amount || !months || months.length === 0) {
              return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        // 1. Calculate the latest month paid to update Student Record
-        // Input 'months' is expected to be an array of "YYYY-MM" strings or ISO dates
-        // We need to find the MAX date in this array.
-        let maxDate = new Date(0); // Epoch
-        
+        let maxDate = new Date(0);
         for (const m of months) {
-            // Assuming format "YYYY-MM" or ISO
             const d = new Date(m); 
-            // Set to 1st of month to avoid timezone shifting issues on boundaries if simple parsing
             const normalized = new Date(d.getFullYear(), d.getMonth(), 1);
             if (normalized > maxDate) {
                 maxDate = normalized;
             }
         }
 
-        // 2. Transaction: Create Payment & Update Student
         const result = await prisma.$transaction(async (tx: any) => {
-            
-            // Create Payment Record
             const payment = await tx.feePayment.create({
                 data: {
                     studentId,
                     amount: parseFloat(amount),
                     paymentDate: new Date(),
-                    paymentType: 'MONTHLY', // Generalizing for this flow
+                    paymentType: 'MONTHLY',
+                    paidMonths: months, // Use the months array from the body
                     remarks: remarks || `Paid for ${months.length} months: ${months.join(', ')}`
                 }
             });
 
-            // Update Student lastFeePaidMonth ONLY if it's simpler/newer
-            // Actually, we should check: if the student has already paid for NEXT year, 
-            // and we rely on maxDate, we must ensure we don't accidentally BACKDATE if they are just paying arrears.
-            // But usually paynow/advance implies moving the date forward.
-            // Let's fetch current to be safe.
             const student = await tx.student.findUnique({ where: { id: studentId } });
             
             if (student) {

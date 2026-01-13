@@ -10,10 +10,12 @@ import {
   TableCell,
   Modal,
   TextField,
+  TimeInput,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useRouter, useParams } from 'next/navigation';
 
 interface TimeSlot {
   id: string;
@@ -31,6 +33,7 @@ export default function ManageTimeSlots() {
   const [label, setLabel] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const router = useRouter();
 
   // Load data on mount
   useEffect(() => {
@@ -68,9 +71,10 @@ export default function ManageTimeSlots() {
     try {
       let response;
       if (editingSlot) {
-        response = await apiFetch(`/api/settings/timeslots`, {
+        // Fix: Use the [id] route for PUT requests
+        response = await apiFetch(`/api/settings/timeslots/${editingSlot.id}`, {
           method: 'PUT',
-          body: JSON.stringify({ id: editingSlot.id, ...slotData }),
+          body: JSON.stringify(slotData),
         });
       } else {
         response = await apiFetch(`/api/settings/timeslots`, {
@@ -93,9 +97,9 @@ export default function ManageTimeSlots() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this time slot?')) {
       try {
-        const response = await apiFetch(`/api/settings/timeslots`, {
+        // Fix: Use the [id] route for DELETE requests
+        const response = await apiFetch(`/api/settings/timeslots/${id}`, {
           method: 'DELETE',
-          body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete time slot');
         setTimeSlots((prev) => prev.filter((t) => t.id !== id));
@@ -107,7 +111,10 @@ export default function ManageTimeSlots() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-start gap-2'>
+        <Button variant="outlined" size="sm" onClick={() => router.push('/dashboard/settings')} className="p-2">
+            <ArrowLeft size={20} />
+          </Button>
         <div>
           <h2 className='text-2xl font-bold text-foreground'>
             Manage Time Slots
@@ -199,18 +206,18 @@ export default function ManageTimeSlots() {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
           />
-          <div className='grid grid-cols-2 gap-4'>
-            <TextField
+          <div className='grid grid-cols-1 gap-4'>
+            <TimeInput
               label='Start Time'
-              type='time'
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={setStartTime}
+              placeholder='09:00 AM'
             />
-            <TextField
+            <TimeInput
               label='End Time'
-              type='time'
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={setEndTime}
+              placeholder='10:00 AM'
             />
           </div>
         </div>

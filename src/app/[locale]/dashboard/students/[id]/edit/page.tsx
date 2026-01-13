@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Card, Button, TextField, Select } from '@/components/ui';
+import { Card, Button, TextField, Select, Badge } from '@/components/ui';
 import { ArrowLeft, Save, ClipboardList, Info, Phone, User, Home, ShieldAlert, Loader2 } from 'lucide-react';
-import { Student, ClassLevel, TimeSlot, StudyStatus, StudentType } from '@/types';
+import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory } from '@/types';
 
 export default function EditStudentPage() {
   const router = useRouter();
@@ -15,9 +15,11 @@ export default function EditStudentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
+  // Dropdown Data
   const [classLevels, setClassLevels] = useState<ClassLevel[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
+  // Form State
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [dobInput, setDobInput] = useState('');
 
@@ -61,12 +63,6 @@ export default function EditStudentPage() {
         const payload = { ...formData };
         if (dobInput) payload.dateOfBirth = new Date(dobInput).toISOString();
 
-        // Ensure we send classId and timeSlotId if they were changed
-        // Or if we need to update session.
-        // The API PUT /students/[id] handles { classId, timeSlotId } to update session.
-        // The formData might have classSession object, but we need to send IDs if changed.
-        // We stored IDs in formData in Select onChange below.
-
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`/api/students/${id}`, {
             method: 'PUT',
@@ -105,6 +101,7 @@ export default function EditStudentPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-20">
+      {/* Top Header */}
       <div className="flex items-center justify-between no-print">
         <div className="flex items-center gap-4">
           <Button variant="outlined" size="sm" onClick={() => router.back()} className="p-2">
@@ -117,12 +114,7 @@ export default function EditStudentPage() {
             <p className="text-sm text-gray-500">Updating record for {formData.studentName}</p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outlined" color="primary" onClick={() => router.back()}>Discard</Button>
-          <Button color="success" onClick={handleSubmit} isLoading={submitting}>
-            <Save size={18} className="mr-2" /> Save Changes
-          </Button>
-        </div>
+        {/* Top Buttons Removed as per request */}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -130,12 +122,12 @@ export default function EditStudentPage() {
         <Card variant="neubrutal" className="border-t-4 border-primary-500">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <TextField 
-                label="Form No." 
+                label="Form No. (فارم نمبر)" 
                 value={formData.formNo || ''} 
                 onChange={e => handleChange('formNo', e.target.value)} 
               />
               <TextField 
-                label="Gr. No." 
+                label="Gr. No. (جنرل رجسٹر نمبر)" 
                 value={formData.grNumber || ''} 
                 onChange={e => handleChange('grNumber', e.target.value)} 
               />
@@ -147,91 +139,121 @@ export default function EditStudentPage() {
            </div>
         </Card>
 
-        {/* Section 2: Personal */}
+        {/* Section 2: Student Personal Info */}
         <Card variant="neubrutal">
            <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-600 mb-6 border-b pb-2">
-              <User size={18} className="mr-2" /> Personal Details
+              <User size={18} className="mr-2" /> Student's Personal Details <span className="font-urdu ml-auto text-sm text-gray-500">طالب علم کی تفصیلات</span>
            </h3>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
               <TextField 
-                label="Full Name" 
+                label="Student's Full Name (طالب علم کا مکمل نام)" 
                 value={formData.studentName || ''} 
                 onChange={e => handleChange('studentName', e.target.value)} 
                 fullWidth 
+                required
               />
               <div className="grid grid-cols-2 gap-4">
                 <TextField 
-                    label="DOB" 
+                    label="DOB (تاریخ پیدائش)" 
                     type="date" 
                     value={dobInput} 
                     onChange={e => setDobInput(e.target.value)} 
+                    required
                 />
                 <TextField 
-                    label="Age" 
-                    type="number"
+                    label="Age (عمر)" 
                     value={formData.age || ''} 
-                    onChange={e => handleChange('age', parseInt(e.target.value) || undefined)} 
+                    onChange={e => handleChange('age', parseInt(e.target.value) || undefined)}
+                    type="number"
                 />
               </div>
               <div className="relative mb-4">
-                 <label className="block text-xs font-medium text-gray-500 mb-1">Gender</label>
+                 <label className="block text-xs font-medium text-gray-500 mb-1">Gender (جنس)</label>
                  <Select 
                     options={[
-                        { value: 'M', label: 'Male' }, 
-                        { value: 'F', label: 'Female' }
+                        { value: 'M', label: 'Male (مرد)' }, 
+                        { value: 'F', label: 'Female (عورت)' }
                     ]}
                     value={formData.gender}
                     onChange={e => handleChange('gender', e.target.value)}
                  />
               </div>
+           </div>
+           <div className="mt-4">
               <TextField 
-                label="Address" 
+                label="Full Residential Address (مکمل رہائشی پتہ)" 
                 value={formData.residence || ''} 
                 onChange={e => handleChange('residence', e.target.value)} 
                 fullWidth 
                 icon={Home}
               />
+               <TextField 
+                label="Permanent Address (مستقل پتہ)" 
+                value={formData.fullPermanentAddress || ''} 
+                onChange={e => handleChange('fullPermanentAddress', e.target.value)} 
+                fullWidth 
+              />
            </div>
         </Card>
 
-        {/* Section 3: Contact */}
+        {/* Section 3: Background & Contact */}
         <Card variant="neubrutal">
            <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-600 mb-6 border-b pb-2">
-              <Info size={18} className="mr-2" /> Contact Info
+              <Info size={18} className="mr-2" /> Academic & Family Background <span className="font-urdu ml-auto text-sm text-gray-500">پس منظر اور خاندان</span>
            </h3>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
               <TextField 
-                label="Father's Name" 
+                label="Father's Name (والد کا نام)" 
                 value={formData.fatherName || ''} 
                 onChange={e => handleChange('fatherName', e.target.value)} 
+                required
+              />
+               <TextField 
+                label="Parent/Guardian Profession (پیشہ)" 
+                value={formData.parentGuardianOccupation || ''} 
+                onChange={e => handleChange('parentGuardianOccupation', e.target.value)} 
               />
               <TextField 
-                label="Mobile" 
+                label="Primary Mobile (موبائل نمبر)" 
                 value={formData.mobile || ''} 
                 onChange={e => handleChange('mobile', e.target.value)} 
                 icon={Phone}
+                required
               />
               <TextField 
-                label="Emergency Name" 
-                value={formData.emergencyContactName || ''} 
-                onChange={e => handleChange('emergencyContactName', e.target.value)} 
+                label="Previous School (سابقہ اسکول)" 
+                value={formData.previousSchool || ''} 
+                onChange={e => handleChange('previousSchool', e.target.value)} 
               />
-               <TextField 
-                label="Emergency Phone" 
-                value={formData.emergencyContactPhone || ''} 
-                onChange={e => handleChange('emergencyContactPhone', e.target.value)} 
-              />
+           </div>
+
+           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div>
+                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-4">Emergency Contact 1</h4>
+                  <TextField 
+                    label="Name" 
+                    value={formData.emergencyContactName || ''} 
+                    onChange={e => handleChange('emergencyContactName', e.target.value)} 
+                    fullWidth
+                  />
+                   <TextField 
+                    label="Phone" 
+                    value={formData.emergencyContactPhone || ''} 
+                    onChange={e => handleChange('emergencyContactPhone', e.target.value)} 
+                    fullWidth
+                  />
+              </div>
            </div>
         </Card>
 
-        {/* Section 4: Office */}
-        <Card variant="neubrutal">
-           <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-600 mb-6 border-b pb-2">
-              <ClipboardList size={18} className="mr-2" /> Office
+        {/* Section 4: Office Use */}
+        <Card variant="neubrutal" className="bg-primary-50/50 dark:bg-primary-900/5 border border-primary-100 dark:border-primary-900/30">
+           <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-700 dark:text-primary-400 mb-6 border-b border-primary-200 dark:border-primary-800 pb-2">
+              <ClipboardList size={18} className="mr-2" /> Office Use Only <span className="font-urdu ml-auto text-sm text-gray-500">صرف دفتری استعمال کے لئے</span>
            </h3>
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Class</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Assigned Class (درجہ)</label>
                   <Select 
                     options={[{value: '', label: 'Select Class'}, ...classLevels.map(c => ({ value: c.id, label: c.name }))]}
                     value={
@@ -240,15 +262,17 @@ export default function EditStudentPage() {
                          (formData as any).classId || formData.classSession?.classLevelId || ''
                     }
                     onChange={e => {
-                        (formData as any).classId = e.target.value; // Store for PUT
+                        // We are using formData loose keys for payload
+                        (formData as any).classId = e.target.value;
                         setFormData({...formData});
                     }}
                   />
               </div>
+
               <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Time Slot</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Time Slot (مناسب وقت)</label>
                   <Select 
-                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: t.label }))]}
+                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: `${t.label} (${t.startTime})` }))]}
                      value={
                          (formData as any).timeSlotId || formData.classSession?.timeSlotId || ''
                      }
@@ -258,43 +282,75 @@ export default function EditStudentPage() {
                      }}
                   />
               </div>
+
               <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Student Type (قسم)</label>
                   <Select 
-                     options={Object.values(StudyStatus).map(s => ({ value: s, label: s }))}
-                     value={formData.studyStatus}
-                     onChange={e => handleChange('studyStatus', e.target.value)}
+                    options={Object.values(StudentType).map(t => ({ value: t, label: t }))}
+                    value={formData.type}
+                    onChange={e => handleChange('type', e.target.value)}
                   />
               </div>
-              <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Type</label>
-                  <Select 
-                     options={Object.values(StudentType).map(t => ({ value: t, label: t }))}
-                     value={formData.type}
-                     onChange={e => handleChange('type', e.target.value)}
-                  />
-              </div>
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+              {formData.type === StudentType.HAFIZ && (
+                <>
+                  <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Hafiz Category (حفظ کی قسم)</label>
+                      <Select 
+                        options={[{value: '', label: 'Select Category'}, ...Object.values(HafizCategory).map(c => ({ value: c, label: c.replace('_', ' ') }))]}
+                        value={formData.hafizCategory}
+                        onChange={e => handleChange('hafizCategory', e.target.value)}
+                      />
+                  </div>
+                  {formData.hafizCategory === HafizCategory.FULL_TIME && (
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Full Time Sub Category (سب کیٹیگری)</label>
+                        <Select 
+                          options={[{value: '', label: 'Select Sub Category'}, ...Object.values(FullTimeSubCategory).map(s => ({ value: s, label: s.replace('_', ' ') }))]}
+                          value={formData.fullTimeSubCategory}
+                          onChange={e => handleChange('fullTimeSubCategory', e.target.value)}
+                        />
+                    </div>
+                  )}
+                </>
+              )}
+
               <TextField 
-                label="Monthly Fees" 
-                type="number"
+                label="Monthly Fees (ماہانہ فیس)" 
+                type="number" 
                 value={formData.monthlyFees || 0} 
                 onChange={e => handleChange('monthlyFees', Number(e.target.value))} 
               />
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               <TextField 
-                label="Remark" 
+                label="Admission Fee (ایڈمیشن فیس)" 
+                type="number" 
+                value={formData.admissionFee || 0} 
+                onChange={e => handleChange('admissionFee', Number(e.target.value))} 
+              />
+              <TextField 
+                label="Remark (کیفیت)" 
                 value={formData.remarks || ''} 
                 onChange={e => handleChange('remarks', e.target.value)} 
               />
+              <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Admission Status</label>
+                  <Select 
+                     options={Object.values(AdmissionStatus).map(s => ({ value: s, label: s }))}
+                     value={formData.admissionStatus}
+                     onChange={e => handleChange('admissionStatus', e.target.value)}
+                  />
+              </div>
            </div>
         </Card>
 
+        {/* Form Actions Footer */}
         <div className="flex justify-end gap-4 pb-12">
-            <Button variant="outlined" color="primary" onClick={() => router.back()}>Cancel</Button>
-            <Button color="success" type="submit" isLoading={submitting}>
-                <Save size={18} className="mr-2" /> Update Student
+            <Button variant="outlined" color="primary" size="lg" onClick={() => router.back()}>Discard</Button>
+            <Button color="success" size="lg" type="submit" className="min-w-[200px]" isLoading={submitting}>
+                <Save size={18} className="mr-2" /> Save Changes
             </Button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
-import { AdmissionStatus, Prisma } from '@prisma/client';
+import { AdmissionStatus } from '@/types';
 
 export async function GET(request: Request) {
   try {
@@ -84,6 +84,7 @@ export async function PUT(request: Request) {
                 // For now just update admissionStatus.
             }
         });
+        console.log(updatedStudent, "---------------UPDATED");
 
         return NextResponse.json(updatedStudent);
 

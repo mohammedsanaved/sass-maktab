@@ -3,7 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 const ACCESS_TOKEN_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET || 'default_access_secret_change_me');
 const REFRESH_TOKEN_SECRET = new TextEncoder().encode(process.env.REFRESH_TOKEN_SECRET || 'default_refresh_secret_change_me');
 
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '7d';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
 export interface TokenPayload {

@@ -130,7 +130,7 @@ export default function TeachersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Teachers & Schedules</h2>
+          <h2 className="text-2xl font-bold text-foreground">Teachers & Schedules</h2>
           <p className="text-sm text-gray-500">Manage teacher assignments and class schedules</p>
         </div>
         <Button variant="contained" color="primary" onClick={() => alert("Redirect to Add Teacher")}>
@@ -184,11 +184,11 @@ export default function TeachersPage() {
                </button>
 
                <div className="flex items-center space-x-4 mb-6">
-                 <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center font-bold text-xl shadow-inner uppercase">
+                 <div className="w-14 h-14 bg-primary-100 text-foreground rounded-2xl flex items-center justify-center font-bold text-xl shadow-inner uppercase">
                    {teacher.name.charAt(0)}
                  </div>
                  <div>
-                   <h3 className="font-bold text-lg text-gray-800 dark:text-white leading-tight">{teacher.name}</h3>
+                   <h3 className="font-bold text-lg text-foreground leading-tight">{teacher.name}</h3>
                    <div className="space-y-0.5 mt-1">
                       {teacher.phone && (
                         <div className="flex items-center text-xs text-gray-500">
@@ -212,17 +212,17 @@ export default function TeachersPage() {
                   </h4>
                   <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                       {teacher.classes.length > 0 ? teacher.classes.map((cls, idx) => (
-                        <div key={idx} className="bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                        <div key={idx} className="bg-primary-50 p-3 rounded-xl border border-gray-100 dark:border-gray-700/50">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="font-bold text-gray-700 dark:text-gray-200 text-sm">
+                                <span className="font-bold text-foreground text-sm">
                                     {cls.classLevel.name}
                                 </span>
                                 <Badge color="blue" size="sm" variant="soft">{cls.totalStudents} Students</Badge>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                                 {cls.timeSlots.map(ts => (
-                                  <div key={ts.id} className="flex items-center px-2 py-0.5 bg-white dark:bg-gray-700 rounded-md text-[10px] text-gray-500 border border-gray-100 dark:border-gray-600 shadow-sm">
-                                    <Clock size={10} className="mr-1 text-primary-400" />
+                                  <div key={ts.id} className="flex items-center px-2  py-0.5 bg-white rounded-md text-[10px] text-gray-700 border border-gray-100 shadow-sm">
+                                    <Clock size={10} className="mr-1 text-primary-500" />
                                     {ts.label}
                                   </div>
                                 ))}

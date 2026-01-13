@@ -96,20 +96,36 @@ export async function PUT(request: Request) {
       );
     }
 
-    // 1. Validation: Check if this Class is assigned to ANY OTHER teacher
-    const existingOtherTeacher = await prisma.classSession.findFirst({
+    // 1. Validation: Check if this Class is assigned to ANY OTHER teacher at the SAME TIME
+    // (A Class cannot be taught by two teachers simultaneously)
+    
+    // We only care about the slots we are trying to ADD
+    // Determine what to add (logic moved up for validation)
+    const existingSessionsPre = await prisma.classSession.findMany({
         where: {
-            classLevelId: classId,
-            teacherId: { not: teacherId }
+          teacherId,
+          classLevelId: classId,
         },
-        include: { teacher: true }
-    });
+      });
+      const existingTimeSlotIdsPre = existingSessionsPre.map((s) => s.timeSlotId);
+      const toAddPre = timeSlotIds.filter((id: string) => !existingTimeSlotIdsPre.includes(id));
+      
+    if (toAddPre.length > 0) {
+        const conflictingSessions = await prisma.classSession.findFirst({
+            where: {
+                classLevelId: classId,
+                timeSlotId: { in: toAddPre },
+                teacherId: { not: teacherId } // Conflict if SOMEONE ELSE is teaching this class at these times
+            },
+            include: { teacher: true, timeSlot: true }
+        });
 
-    if (existingOtherTeacher) {
-        return NextResponse.json(
-            { error: `This Class is already assigned to ${existingOtherTeacher.teacher.name}. Cannot assign to multiple teachers.` },
-            { status: 409 }
-        );
+        if (conflictingSessions) {
+            return NextResponse.json(
+                { error: `Class is already assigned to ${conflictingSessions.teacher.name} at ${conflictingSessions.timeSlot.startTime}.` },
+                { status: 409 }
+            );
+        }
     }
 
     // 2. Transaction to update slots
@@ -121,8 +137,7 @@ export async function PUT(request: Request) {
           classLevelId: classId,
         },
       });
-      console.log("-----------------------------existingSessions", existingSessions);
-
+      
       const existingTimeSlotIds = existingSessions.map((s) => s.timeSlotId);
       
       // Determine what to add and what to remove

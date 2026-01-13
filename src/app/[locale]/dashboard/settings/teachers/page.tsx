@@ -13,8 +13,9 @@ import {
   Badge,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus, Phone, Mail } from 'lucide-react';
+import { Edit, Trash2, Plus, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 interface Teacher {
   id: string;
@@ -28,11 +29,14 @@ export default function ManageTeachers() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const router = useRouter();
 
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     // Replace with API call
@@ -56,26 +60,39 @@ export default function ManageTeachers() {
       setName(teacher.name);
       setEmail(teacher.email);
       setPhone(teacher.phone);
+      setAddress((teacher as any).address || ''); // Handle if address is not in type yet
+      setPassword(''); // Don't show existing hash
     } else {
       setEditingTeacher(null);
       setName('');
       setEmail('');
       setPhone('');
+      setAddress('');
+      setPassword('');
     }
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
-    const teacherData = { name, email, phone, role: 'TEACHER' };
+    const teacherData: any = { name, email, phone, address, role: 'TEACHER' };
+    if (password) {
+      teacherData.password = password;
+    }
+
     try {
       let response;
       if (editingTeacher) {
-        response = await apiFetch(`/api/teachers`, {
+        response = await apiFetch(`/api/settings/teachers`, {
           method: 'PUT',
           body: JSON.stringify({ id: editingTeacher.id, ...teacherData }),
         });
       } else {
-        response = await apiFetch(`/api/teachers`, {
+        // Validate password for new creation
+        if (!password) {
+            alert("Password is required for new teachers");
+            return;
+        }
+        response = await apiFetch(`/api/settings/teachers`, {
           method: 'POST',
           body: JSON.stringify(teacherData),
         });
@@ -84,7 +101,7 @@ export default function ManageTeachers() {
       if (!response.ok) throw new Error('Failed to save teacher');
 
       // Refresh teacher list
-      const updatedTeachers = await (await apiFetch('/api/teachers')).json();
+      const updatedTeachers = await (await apiFetch('/api/settings/teachers')).json();
       setTeachers(updatedTeachers);
     } catch (error) {
       console.error(error);
@@ -109,7 +126,10 @@ export default function ManageTeachers() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-start gap-2'>
+        <Button variant="outlined" size="sm" onClick={() => router.push('/dashboard/settings')} className="p-2">
+            <ArrowLeft size={20} />
+          </Button>
         <div>
           <h2 className='text-2xl font-bold text-foreground'>
             Manage Teachers
@@ -222,6 +242,18 @@ export default function ManageTeachers() {
             label='Phone Number'
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+          />
+           <TextField
+            label='Address'
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+           <TextField
+            label={editingTeacher ? 'Reset Password (optional)' : 'Password'}
+            type='password'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={editingTeacher ? 'Leave blank to keep current' : ''}
           />
         </div>
       </Modal>

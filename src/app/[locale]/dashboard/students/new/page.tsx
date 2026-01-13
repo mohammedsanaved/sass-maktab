@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, TextField, Select, Badge } from '@/components/ui';
 import { ArrowLeft, Save, ClipboardList, Info, Phone, User, Home } from 'lucide-react';
-import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus } from '@/types';
+import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory } from '@/types';
 
 export default function NewStudentPage() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function NewStudentPage() {
     gender: 'M',
     admissionFee: 0,
     monthlyFees: 0,
+    academicYear: '2025-2026', // Default
     remarks: ''
   });
   
@@ -117,12 +118,7 @@ export default function NewStudentPage() {
             <p className="text-sm text-gray-500">Fill in the student details based on the admission form.</p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outlined" color="primary" onClick={() => router.back()}>Cancel</Button>
-          <Button color="success" onClick={handleSubmit} isLoading={loading}>
-            <Save size={18} className="mr-2" /> Save & Admit
-          </Button>
-        </div>
+
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -133,16 +129,25 @@ export default function NewStudentPage() {
                 label="Form No. (فارم نمبر)" 
                 value={formData.formNo || ''} 
                 onChange={e => handleChange('formNo', e.target.value)} 
+                helperText="Auto-generated if empty"
               />
               <TextField 
                 label="Gr. No. (جنرل رجسٹر نمبر)" 
                 value={formData.grNumber || ''} 
                 onChange={e => handleChange('grNumber', e.target.value)} 
+                helperText="Auto-generated if empty"
               />
-              <div className="flex flex-col justify-center">
+              <TextField 
+                label="Academic Year (تعلیمی سال)" 
+                value={formData.academicYear || ''} 
+                onChange={e => handleChange('academicYear', e.target.value)} 
+                placeholder="2024-2025"
+                required
+              />
+                            {/* <div className="flex flex-col justify-center">
                   <span className="text-xs text-gray-500 uppercase font-bold mb-1">Roll Number</span>
                   <span className="text-sm text-gray-400 italic">Auto-generated upon save</span>
-              </div>
+              </div> */}
            </div>
         </Card>
 
@@ -293,6 +298,29 @@ export default function NewStudentPage() {
                     onChange={e => handleChange('type', e.target.value)}
                   />
               </div>
+
+              {formData.type === StudentType.HAFIZ && (
+                <>
+                  <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Hafiz Category (حفظ کی قسم)</label>
+                      <Select 
+                        options={[{value: '', label: 'Select Category'}, ...Object.values(HafizCategory).map(c => ({ value: c, label: c.replace('_', ' ') }))]}
+                        value={formData.hafizCategory}
+                        onChange={e => handleChange('hafizCategory', e.target.value)}
+                      />
+                  </div>
+                  {formData.hafizCategory === HafizCategory.FULL_TIME && (
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Full Time Sub Category (سب کیٹیگری)</label>
+                        <Select 
+                          options={[{value: '', label: 'Select Sub Category'}, ...Object.values(FullTimeSubCategory).map(s => ({ value: s, label: s.replace('_', ' ') }))]}
+                          value={formData.fullTimeSubCategory}
+                          onChange={e => handleChange('fullTimeSubCategory', e.target.value)}
+                        />
+                    </div>
+                  )}
+                </>
+              )}
 
               <TextField 
                 label="Monthly Fees (ماہانہ فیس)" 

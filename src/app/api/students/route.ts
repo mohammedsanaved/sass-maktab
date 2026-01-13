@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     if (status) where.status = status;
     if (classId) where.classSession = { classLevelId: classId };
     if (timeSlotId) {
-       // Combine with classId if present, or just filter by timeSlot
+       // Combine with classId if present, or just filter by classSession
        where.classSession = { 
            ...(where.classSession || {}),
            timeSlotId: timeSlotId 
@@ -31,11 +31,91 @@ export async function GET(request: Request) {
             timeSlot: true,
           },
         },
+        feePayments: {
+            select: { paidMonths: true } // Fetch paid months history
+        }
       },
       orderBy: { joinedAt: 'desc' },
     });
 
-    return NextResponse.json(students);
+    // Dynamic Fee Calculation
+    const currentDate = new Date();
+    const studentsWithFees = students.map((student) => {
+        let totalDues = 0;
+        let unpaidMonthsCount = 0;
+        let paymentStatus = 'Unpaid'; // Default
+
+        // Only calculate for confirmed students with valid fees
+        if (student.admissionStatus === 'COMPLETED' && student.monthlyFees > 0) {
+            const joinDate = new Date(student.joinedAt);
+            
+            // Calculate total months since joining (inclusive of joining month if needed, or simple difference)
+            // Logic: (YearDiff * 12) + MonthDiff
+            // Assuming fees start from the joining month.
+            let monthsSinceJoining = (currentDate.getFullYear() - joinDate.getFullYear()) * 12 + (currentDate.getMonth() - joinDate.getMonth());
+            // If currently in the joining month, it counts as 0 difference but we might charge for it? 
+            // Usually if joined today, fees due for this month. So +1.
+            monthsSinceJoining += 1; 
+
+            if (monthsSinceJoining < 0) monthsSinceJoining = 0;
+
+            // Flatten all paid months from all payments
+            // paidMonths is array of strings "YYYY-MM"
+            const allPaidMonths = new Set(
+                student.feePayments.flatMap(p => p.paidMonths)
+            );
+
+            // Logic: Iterate from joining month to current month and check if paid
+            // This is more accurate than simple count subtraction because specific months must be paid.
+            let unpaidCount = 0;
+            let checkDate = new Date(joinDate);
+            
+            // Iterate month by month up to current month
+            // We set date to 1st to avoid end-of-month edge cases when incrementing
+            checkDate.setDate(1); 
+            
+            const currentMonthYearChar = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+
+            // Loop until checkDate's month-year string is > current month-year string
+            // actually simpler: just loop for N months
+            for (let i = 0; i < monthsSinceJoining; i++) {
+                const year = checkDate.getFullYear();
+                const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+                const monthStr = `${year}-${month}`;
+                
+                if (!allPaidMonths.has(monthStr)) {
+                    unpaidCount++;
+                }
+                
+                // Move to next month
+                checkDate.setMonth(checkDate.getMonth() + 1);
+            }
+
+            unpaidMonthsCount = unpaidCount;
+            totalDues = unpaidMonthsCount * student.monthlyFees;
+
+            if (unpaidMonthsCount === 0) {
+                paymentStatus = 'Paid';
+            } else if (unpaidMonthsCount < monthsSinceJoining) {
+                paymentStatus = 'Partial';
+            } else {
+                paymentStatus = 'Unpaid';
+            }
+        } else if (student.admissionStatus !== 'COMPLETED') {
+             paymentStatus = 'N/A'; // Not enrolled
+        } else if (student.monthlyFees === 0) {
+             paymentStatus = 'Free';
+        }
+
+        return {
+            ...student,
+            totalDues,
+            unpaidMonthsCount,
+            paymentStatus
+        };
+    });
+
+    return NextResponse.json(studentsWithFees);
   } catch (error) {
     console.error('Error fetching students:', error);
     return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
@@ -47,13 +127,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
         studentName, fatherName, gender, mobile, dateOfBirth, 
-        grNumber, rollNumber, type, 
+        formNo, grNumber, type, 
         hafizCategory, fullTimeSubCategory,
         admissionFee, monthlyFees,
         status, admissionStatus,
         residence, fullPermanentAddress,
         emergencyContactName, emergencyContactPhone,
-        classId, timeSlotId 
+        classId, timeSlotId, academicYear
     } = body;
 
     // Validate required fields
@@ -84,7 +164,7 @@ export async function POST(request: Request) {
         select: { rollNumber: true }
     });
 
-    // 3. Determine next serial
+    // 4. Determine next serial for Roll Number (monthly)
     let maxSerial = 0;
     existingStudentsThisMonth.forEach(s => {
         if (s.rollNumber) {
@@ -96,68 +176,118 @@ export async function POST(request: Request) {
         }
     });
 
-    const nextSerial = String(maxSerial + 1).padStart(3, '0');
-    const generatedRollNumber = `${nextSerial}${suffix}`;
+    const nextRollSerial = String(maxSerial + 1).padStart(3, '0');
+    const generatedRollNumber = `${nextRollSerial}${suffix}`;
 
-    // Prepare data
-    const data: any = {
-        studentName,
-        fatherName,
-        gender,
-        mobile,
-        dateOfBirth: new Date(dateOfBirth),
-        grNumber,
-        rollNumber: generatedRollNumber, // Auto-generated
-        type: type || 'NAZERA',
-        hafizCategory, 
-        fullTimeSubCategory,
-        admissionFee: admissionFee ? parseFloat(admissionFee) : undefined,
-        monthlyFees: monthlyFees ? parseFloat(monthlyFees) : 0,
-        residence,
-        fullPermanentAddress,
-        emergencyContactName,
-        emergencyContactPhone,
-        status: status || 'NEW',
-        admissionStatus: admissionStatus || 'COMPLETED',
-        joinedAt: new Date(),
-    };
+    // 5. Robust ID Generation for FormNo and GrNo (Inside Transaction)
+    const newStudent = await prisma.$transaction(async (tx: any) => {
+        
+        let finalFormNo = formNo;
+        let finalGrNumber = grNumber;
 
-    // Handle Class Session assignment
-    if (classId && timeSlotId) {
-        // Find the specific session
-        const session = await prisma.classSession.findFirst({
-            where: {
-                classLevelId: classId,
-                timeSlotId: timeSlotId
+        // Auto-generate Form No if empty
+        if (!finalFormNo || finalFormNo.trim() === '') {
+            const currentYear = new Date().getFullYear();
+            const formPrefix = `F-${currentYear}-`;
+            const lastForm = await tx.student.findFirst({
+                where: { formNo: { startsWith: formPrefix } },
+                orderBy: { formNo: 'desc' },
+                select: { formNo: true }
+            });
+
+            let nextFormSerial = 1;
+            if (lastForm && lastForm.formNo) {
+                const parts = lastForm.formNo.split('-');
+                const lastSerial = parseInt(parts[2], 10);
+                if (!isNaN(lastSerial)) nextFormSerial = lastSerial + 1;
             }
-        });
-
-        if (session) {
-            data.classSessionId = session.id;
-        } else {
-             // Optional: Create session on fly? Or return error?
-             // Usually teacher must be assigned first?
-             // User prompt: "Admin assign Classes" implies admin does it. 
-             // If manual assignment:
-             return NextResponse.json(
-                { error: 'Class Session (Class + Time) not found. Please ensure a teacher is assigned to this slot or create the session.' }, 
-                { status: 400 }
-             );
+            finalFormNo = `${formPrefix}${String(nextFormSerial).padStart(3, '0')}`;
         }
-    }
 
-    const newStudent = await prisma.student.create({
-        data
+        // Auto-generate GR Number if empty
+        if (!finalGrNumber || finalGrNumber.trim() === '') {
+            const lastGr = await tx.student.findFirst({
+                where: { grNumber: { startsWith: 'GR-' } },
+                orderBy: { grNumber: 'desc' },
+                select: { grNumber: true }
+            });
+
+            let nextGrSerial = 1001;
+            if (lastGr && lastGr.grNumber) {
+                const parts = lastGr.grNumber.split('-');
+                const lastSerial = parseInt(parts[1], 10);
+                if (!isNaN(lastSerial)) nextGrSerial = lastSerial + 1;
+            }
+            finalGrNumber = `GR-${nextGrSerial}`;
+        }
+
+        // Prepare data
+        const data: any = {
+            studentName,
+            fatherName,
+            gender,
+            mobile,
+            dateOfBirth: new Date(dateOfBirth),
+            grNumber: finalGrNumber,
+            formNo: finalFormNo,
+            rollNumber: generatedRollNumber,
+            type: type || 'NAZERA',
+            hafizCategory, 
+            fullTimeSubCategory,
+            admissionFee: admissionFee ? parseFloat(admissionFee) : undefined,
+            monthlyFees: monthlyFees ? parseFloat(monthlyFees) : 0,
+            residence,
+            fullPermanentAddress,
+            emergencyContactName,
+            emergencyContactPhone,
+            status: status || 'NEW',
+            admissionStatus: admissionStatus || 'COMPLETED',
+            joinedAt: new Date(),
+        };
+
+        // Handle Class Session assignment
+        if (classId && timeSlotId) {
+            const session = await tx.classSession.findFirst({
+                where: { classLevelId: classId, timeSlotId: timeSlotId }
+            });
+            if (session) {
+                data.classSessionId = session.id;
+            } else {
+                throw new Error('CLASS_SESSION_NOT_FOUND');
+            }
+        }
+
+        const student = await tx.student.create({ data });
+
+        // Create initial Enrollment
+        if (academicYear && data.classSessionId) {
+            await tx.studentEnrollment.create({
+                data: {
+                    studentId: student.id,
+                    classSessionId: data.classSessionId,
+                    academicYear: academicYear,
+                    isActive: true,
+                    resultStatus: 'PENDING'
+                }
+            });
+        }
+
+        return student;
     });
 
     console.log('-------------New Student:', newStudent);
-
     return NextResponse.json(newStudent, { status: 201 });
 
   } catch (error: any) {
     console.error('Error creating student:', error);
+    if (error.message === 'CLASS_SESSION_NOT_FOUND') {
+        return NextResponse.json(
+            { error: 'Class Session (Class + Time) not found. Please ensure a teacher is assigned to this slot.' }, 
+            { status: 400 }
+        );
+    }
     if (error.code === 'P2002') {
-         return NextResponse.json({ error: 'Duplicate Form No, GR No, or Roll Number' }, { status: 409 });
+         return NextResponse.json({ error: 'Duplicate Form No, GR No, or Roll Number. Please try again.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });
   }

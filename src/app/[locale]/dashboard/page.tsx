@@ -321,7 +321,7 @@ export default function DashboardPage() {
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className='h-10 pl-9 pr-4 rounded-lg text-sm border-primary-700 border  outline-none appearance-none cursor-pointer'
             >
-              {[2023, 2024, 2025].map((y) => (
+              {[2023, 2024, 2025, 2026,2027].map((y) => (
                 <option
                   key={y}
                   value={y}
@@ -373,7 +373,7 @@ export default function DashboardPage() {
                 Revenue ({shortMonth})
               </p>
               <h3 className='text-3xl font-bold text-foreground mt-1'>
-                ${overview?.collectedFee.toLocaleString() ?? 0}
+                ₹{overview?.collectedFee.toLocaleString() ?? 0}
               </h3>
             </div>
             <div className='p-2 bg-green-100 dark:bg-green-900 rounded-lg text-green-600'>

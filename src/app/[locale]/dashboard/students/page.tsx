@@ -35,21 +35,20 @@ export default function StudentsPage() {
   // Promotion Modal
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [targetSessionId, setTargetSessionId] = useState(''); // Target ClassId
-  // For promotion, usually we need Class + TimeSlot. The generic API /students/promote needs {classId, timeSlotId}.
-  // But wait, the API expects existing ClassSession? Or just IDs? 
-  // Let's implement dynamic session fetching or just use Class + Time dropdowns in modal.
-  const [targetClassId, setTargetClassId] = useState('');
-  const [targetTimeSlotId, setTargetTimeSlotId] = useState('');
+  // For promotion, we now use actual Class Sessions to ensure combinations exist.
+  const [selectedSessionId, setSelectedSessionId] = useState('');
+  const [promoteAcademicYear, setPromoteAcademicYear] = useState('2025-2026');
   // Fetch Initial Data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         // Parallel fetching
-        const [studentsRes, classesRes, timeSlotsRes] = await Promise.all([
+        const [studentsRes, classesRes, timeSlotsRes, sessionsRes] = await Promise.all([
           apiFetch('/api/students'),
           apiFetch('/api/settings/classes'),
-          apiFetch('/api/settings/timeslots')
+          apiFetch('/api/settings/timeslots'),
+          apiFetch('/api/settings/class-sessions')
         ]);
 
 
@@ -59,6 +58,7 @@ export default function StudentsPage() {
         }
         if (classesRes.ok) setClassLevels(await classesRes.json());
         if (timeSlotsRes.ok) setTimeSlots(await timeSlotsRes.json());
+        if (sessionsRes.ok) setAvailableSessions(await sessionsRes.json());
 
       } catch (error) {
         console.error("Failed to load data", error);
@@ -112,8 +112,9 @@ export default function StudentsPage() {
 
   // Promotion Handler
   const handlePromote = async () => {
-    if (!targetClassId || !targetTimeSlotId) {
-      alert("Please select both target Class and Time Slot.");
+    const session = availableSessions.find(s => s.id === selectedSessionId);
+    if (!session) {
+      alert("Please select a target Class Session.");
       return;
     }
 
@@ -122,8 +123,9 @@ export default function StudentsPage() {
             method: 'PUT',
             body: JSON.stringify({
                 studentIds: Array.from(selectedIds),
-                classId: targetClassId,
-                timeSlotId: targetTimeSlotId
+                classId: session.classLevelId,
+                timeSlotId: session.timeSlotId,
+                academicYear: promoteAcademicYear
             })
         });
 
@@ -131,6 +133,7 @@ export default function StudentsPage() {
             alert("Promotion successful!");
             setIsPromoteModalOpen(false);
             setSelectedIds(new Set());
+            setSelectedSessionId('');
             // Refresh data
             const res = await apiFetch('/api/students');
             if (res.ok) setStudents(await res.json());
@@ -306,19 +309,16 @@ export default function StudentsPage() {
                     }
                     className='flex flex-col group cursor-pointer'
                   >
-                    <span className='font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-600 transition-colors'>
+                    <span className='text-foreground group-hover:text-primary transition-colors'>
                       {student.studentName}
                     </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div
-                    onClick={() =>
-                      router.push(`/dashboard/students/${student.id}`)
-                    }
-                    className='flex flex-col group cursor-pointer'
+                    className='flex flex-col group'
                   >
-                    <span className='font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-600 transition-colors'>
+                    <span className='text-foreground transition-colors'>
                       {student.fatherName}
                     </span>
                     <span className='text-xs text-gray-500'>
@@ -330,11 +330,11 @@ export default function StudentsPage() {
                   <Badge color='purple'>
                     {student.classSession?.classLevel?.name || 'Unassigned'}
                   </Badge>
-                  {student.classSession?.sectionName && (
+                  {/* {student.classSession?.sectionName && (
                     <div className='text-xs text-gray-500 mt-1'>
                       {student.classSession.sectionName}
                     </div>
-                  )}
+                  )} */}
                   <div className='text-xs text-blue-500 mt-0.5'>
                     {student.classSession?.timeSlot?.label || ''}
                   </div>
@@ -426,21 +426,30 @@ export default function StudentsPage() {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Class</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Session (Class + Time + Teacher)</label>
                 <Select 
-                    options={[{value: '', label: 'Select Class...'}, ...classLevels.map(c => ({ value: c.id, label: c.name }))]}
-                    value={targetClassId}
-                    onChange={(e) => setTargetClassId(e.target.value)}
+                    options={[
+                        {value: '', label: 'Select Target Session...'}, 
+                        ...availableSessions.map(s => ({ 
+                            value: s.id, 
+                            label: `${s.classLevel?.name || 'Unknown'} - ${s.timeSlot?.label || 'Unknown'} (${s.teacher?.name || 'No Teacher'})` 
+                        }))
+                    ]}
+                    value={selectedSessionId}
+                    onChange={(e) => setSelectedSessionId(e.target.value)}
                 />
+                <p className="mt-2 text-[10px] text-gray-500 italic">
+                    Note: If a class is missing, please assign a teacher to it in Teacher Settings first.
+                </p>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Time Slot</label>
-                <Select 
-                    options={[{value: '', label: 'Select Time Slot...'}, ...timeSlots.map(t => ({ value: t.id, label: t.label }))]}
-                    value={targetTimeSlotId}
-                    onChange={(e) => setTargetTimeSlotId(e.target.value)}
-                />
-            </div>
+
+            <TextField 
+                label="Target Academic Year (تعلیمی سال)" 
+                value={promoteAcademicYear} 
+                onChange={e => setPromoteAcademicYear(e.target.value)} 
+                placeholder="2025-2026"
+                required
+            />
         </div>
       </Modal>
     </div>
