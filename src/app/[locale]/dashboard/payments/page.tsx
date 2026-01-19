@@ -79,6 +79,13 @@ const formatDate = (dateString: string | Date): string => {
   }
 };
 
+// Helper to get YYYY-MM string from local Date
+const getMonthStr = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${year}-${month}`;
+};
+
 const PaymentsPage = () => {
   const [students, setStudents] = useState<StudentPaymentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,9 +215,10 @@ const PaymentsPage = () => {
     today.setHours(0, 0, 0, 0);
 
     while (current <= today) {
-        pendingMonths.push(current.toISOString().substring(0, 7));
+        pendingMonths.push(getMonthStr(current));
         current.setMonth(current.getMonth() + 1);
     }
+
 
     setPaymentMonths(pendingMonths);
     setPaymentAmount((pendingMonths.length * student.monthlyFees).toString());
@@ -259,6 +267,7 @@ const PaymentsPage = () => {
           ...selectedStudent,
           amount: parseFloat(paymentAmount),
           months: paymentMonths,
+          receiptNo: paymentResponse.receiptNo,
           id: paymentResponse.id, // Get the payment ID from response
           classLevelName: selectedStudent.classSession?.classLevelName || 'N/A', // Ensure classLevelName at root level
       });
@@ -517,7 +526,7 @@ const PaymentsPage = () => {
                           <h4 className="text-xs font-black text-primary-600 border-b pb-1">{year}</h4>
                           <div className='grid grid-cols-4 gap-2'>
                             {monthsByYear[parseInt(year)].map((d) => {
-                                const monthStr = d.toISOString().substring(0, 7);
+                                const monthStr = getMonthStr(d);
                                 const isSelected = paymentMonths.includes(monthStr);
                                 return (
                                     <Button

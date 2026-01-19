@@ -86,9 +86,9 @@ export default function ManageTeachers() {
     try {
       let response;
       if (editingTeacher) {
-        response = await apiFetch(`/api/settings/teachers`, {
+        response = await apiFetch(`/api/settings/teachers/${editingTeacher.id}`, {
           method: 'PUT',
-          body: JSON.stringify({ id: editingTeacher.id, ...teacherData }),
+          body: JSON.stringify(teacherData),
         });
       } else {
         // Validate password for new creation
@@ -116,9 +116,8 @@ export default function ManageTeachers() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this teacher?')) {
       try {
-        const response = await apiFetch(`/api/teachers`, {
+        const response = await apiFetch(`/api/settings/teachers/${id}`, {
           method: 'DELETE',
-          body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete teacher');
         setTeachers((prev) => prev.filter((t) => t.id !== id));

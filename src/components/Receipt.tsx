@@ -67,7 +67,8 @@ export const Receipt = React.forwardRef((props: any, ref: any) => {
           <span>Date: {formatDate(new Date())}</span>
           <span>Time: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
-        <div>Receipt No: {data.id?.substring(data.id.length - 8).toUpperCase() || 'TEMP'}</div>
+        <div>Receipt No: {data.receiptNo || (data.id?.substring(data.id.length - 8).toUpperCase() || 'TEMP')}</div>
+        {/* <div>Receipt No: {data.receiptNo}</div> */}
       </div>
 
       <div style={{ borderTop: '1px dashed #000', margin: '8px 0' }}></div>

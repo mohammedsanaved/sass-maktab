@@ -33,11 +33,11 @@ export default function StudentsPage() {
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
-    limit: 15,
+    limit: 10,
     totalPages: 0
   });
 

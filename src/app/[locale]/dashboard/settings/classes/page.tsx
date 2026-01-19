@@ -68,9 +68,9 @@ export default function ManageClasses() {
     try {
       let response;
       if (editingClass) {
-        response = await apiFetch(`/api/settings/classes`, {
+        response = await apiFetch(`/api/settings/classes/${editingClass.id}`, {
           method: 'PUT',
-          body: JSON.stringify({ id: editingClass.id, ...classData }),
+          body: JSON.stringify(classData),
         });
       } else {
         response = await apiFetch(`/api/settings/classes`, {
@@ -97,9 +97,8 @@ export default function ManageClasses() {
       )
     ) {
       try {
-        const response = await apiFetch(`/api/settings/classes`, {
+        const response = await apiFetch(`/api/settings/classes/${id}`, {
           method: 'DELETE',
-          body: JSON.stringify({ id }),
         });
         if (!response.ok) throw new Error('Failed to delete class');
         setClasses((prev) => prev.filter((c) => c.id !== id));

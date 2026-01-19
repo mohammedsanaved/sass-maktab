@@ -191,7 +191,37 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Generate Unique Receipt Number: R-XXXX-MMYYYY
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const suffix = `-${month}${year}`;
+
         const result = await prisma.$transaction(async (tx: any) => {
+            // Find existing receipts for this month to get next serial
+            const existingReceipts = await tx.feePayment.findMany({
+                where: {
+                    receiptNo: {
+                        endsWith: suffix
+                    }
+                },
+                select: { receiptNo: true }
+            });
+
+            let maxSerial = 0;
+            existingReceipts.forEach((p: any) => {
+                if (p.receiptNo) {
+                    const parts = p.receiptNo.split('-');
+                    const serial = parseInt(parts[1], 10);
+                    if (!isNaN(serial) && serial > maxSerial) {
+                        maxSerial = serial;
+                    }
+                }
+            });
+
+            const nextSerial = String(maxSerial + 1).padStart(4, '0');
+            const generatedReceiptNo = `R-${nextSerial}${suffix}`;
+
             const payment = await tx.feePayment.create({
                 data: {
                     studentId,
@@ -199,6 +229,7 @@ export async function POST(request: NextRequest) {
                     paymentDate: new Date(),
                     paymentType: 'MONTHLY',
                     paidMonths: months, // Use the months array from the body
+                    receiptNo: generatedReceiptNo,
                     remarks: remarks || `Paid for ${months.length} months: ${months.join(', ')}`
                 }
             });

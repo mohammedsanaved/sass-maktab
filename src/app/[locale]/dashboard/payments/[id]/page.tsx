@@ -38,6 +38,7 @@ const StudentPaymentHistoryParams = ({ params }: { params: Promise<{ id: string 
     const [payments, setPayments] = useState<Payment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    console.log('StudentPaymentHistoryParams render with receiptNos:', payments.map(p => p.receiptNo));
 
     // Pagination & Search
     const [page, setPage] = useState(1);
@@ -90,13 +91,14 @@ const StudentPaymentHistoryParams = ({ params }: { params: Promise<{ id: string 
         if (!student) return;
 
         setPrintData({
-            id: payment.receiptNo || payment.id, // Use receiptNo if available for display
+            ...payment,
             studentName: student.studentName,
             fatherName: student.fatherName,
             rollNumber: student.rollNumber,
             classLevelName: student.classLevelName,
             amount: payment.amount,
             months: payment.paidMonths,
+            // receiptNo: payment.receiptNo,
             paymentDate: payment.paymentDate,
         });
         
