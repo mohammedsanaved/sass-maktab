@@ -14,15 +14,15 @@ export async function GET(request: Request) {
 
     // 1. Total Students (Active)
     const totalStudents = await prisma.student.count({
-      where: { isActive: true },
+      where: { isActive: true, admissionStatus: 'COMPLETED' },
     });
 
     // 2. Hafiz and Nazera Counts (for breakdown if needed, UI uses it in card 1)
     const hafizCount = await prisma.student.count({
-      where: { isActive: true, type: 'HAFIZ' },
+      where: { isActive: true, type: 'HAFIZ', admissionStatus: 'COMPLETED' },
     });
     const nazeraCount = await prisma.student.count({
-      where: { isActive: true, type: 'NAZERA' },
+      where: { isActive: true, type: 'NAZERA', admissionStatus: 'COMPLETED' },
     });
     const teacherCount = await prisma.teacher.count({
       where: { role: 'TEACHER' },
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
           gte: startOfMonth,
           lte: endOfMonth,
         },
+        admissionStatus: 'COMPLETED'
       },
     });
 
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
     // c) Are monthly, have NO paidMonths, but paid in this month (legacy support)
     const payments = await prisma.feePayment.findMany({
       where: {
+        // admissionStatus: 'COMPLETED',
         OR: [
           { paidMonths: { has: targetMonthStr } },
           {
@@ -102,6 +104,7 @@ export async function GET(request: Request) {
     const studentsForUnpaidCheck = await prisma.student.findMany({
       where: {
         isActive: true,
+        admissionStatus: 'COMPLETED',
         joinedAt: { lte: endOfMonth }
       },
       select: {
@@ -130,7 +133,7 @@ export async function GET(request: Request) {
       _sum: {
         monthlyFees: true,
       },
-      where: { isActive: true },
+      where: { isActive: true, admissionStatus: 'COMPLETED' },
     });
     const expectedFee = expectedFeeAgg._sum.monthlyFees || 0;
 

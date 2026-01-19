@@ -21,7 +21,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Arrears Calculation Logic
-    const arrearsStartDate = new Date(2025, 6, 1);
     const referenceDate = new Date();
     referenceDate.setDate(1);
     referenceDate.setHours(0, 0, 0, 0);
@@ -30,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     let arrearsAmount = 0;
 
     const joinDate = new Date(student.joinedAt);
-    const startCalculationFrom = joinDate > arrearsStartDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : arrearsStartDate;
+    const startCalculationFrom = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
     
     // Collect all paid months across all transactions
     const allPaidMonths = new Set<string>();
@@ -40,9 +39,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         }
     });
 
-    // Loop from startCalculationFrom to referenceDate (current month inclusive)
+    // Loop from startCalculationFrom to (but not including) referenceDate
+    // This makes the current month's fee NOT an arrear until next month starts.
     let tempDate = new Date(startCalculationFrom);
-    while (tempDate <= referenceDate) {
+    while (tempDate < referenceDate) {
         const monthStr = tempDate.toISOString().substring(0, 7);
         if (!allPaidMonths.has(monthStr)) {
             arrearsMonths++;
@@ -53,6 +53,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const studentWithArrears = {
         ...student,
+        previousSchool: (student as any).previousTraining, // Map previousTraining to previousSchool for frontend consistency
         arrears: {
             months: arrearsMonths,
             amount: arrearsAmount
@@ -72,11 +73,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     // Allow updating almost all fields
     const { 
-        studentName, fatherName, gender, mobile, dateOfBirth, 
+        studentName, fatherName, gender, mobile, dateOfBirth, age,
         grNumber, rollNumber, type, 
+        hafizCategory, fullTimeSubCategory,
         admissionFee, monthlyFees,
         residence, fullPermanentAddress,
+        parentGuardianOccupation, previousSchool,
         emergencyContactName, emergencyContactPhone,
+        remarks,
         classId, timeSlotId,
         status, admissionStatus, studyStatus
     } = body;
@@ -87,17 +91,36 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (gender !== undefined) data.gender = gender;
     if (mobile !== undefined) data.mobile = mobile;
     if (dateOfBirth !== undefined) data.dateOfBirth = new Date(dateOfBirth);
+    if (age !== undefined) data.age = age ? parseInt(age) : undefined;
     if (grNumber !== undefined) data.grNumber = grNumber;
     if (rollNumber !== undefined) data.rollNumber = rollNumber;
     if (type !== undefined) data.type = type;
+    if (hafizCategory !== undefined) data.hafizCategory = hafizCategory;
+    if (fullTimeSubCategory !== undefined) data.fullTimeSubCategory = fullTimeSubCategory;
     if (admissionFee !== undefined) data.admissionFee = parseFloat(admissionFee);
     if (monthlyFees !== undefined) data.monthlyFees = parseFloat(monthlyFees);
     if (residence !== undefined) data.residence = residence;
     if (fullPermanentAddress !== undefined) data.fullPermanentAddress = fullPermanentAddress;
+    if (parentGuardianOccupation !== undefined) data.parentGuardianOccupation = parentGuardianOccupation;
+    if (previousSchool !== undefined) data.previousTraining = previousSchool; // Map previousSchool to previousTraining
     if (emergencyContactName !== undefined) data.emergencyContactName = emergencyContactName;
     if (emergencyContactPhone !== undefined) data.emergencyContactPhone = emergencyContactPhone;
+    if (remarks !== undefined) data.remarks = remarks;
     if (status !== undefined) data.status = status;
-    if (admissionStatus !== undefined) data.admissionStatus = admissionStatus;
+    if (admissionStatus !== undefined) {
+        data.admissionStatus = admissionStatus;
+        
+        // Logical Trigger: If status is being updated to COMPLETED, 
+        // we reset joinedAt to 'now' so fees start from this month.
+        const currentStudent = await prisma.student.findUnique({ 
+            where: { id },
+            select: { admissionStatus: true }
+        });
+        
+        if (admissionStatus === 'COMPLETED' && currentStudent?.admissionStatus !== 'COMPLETED') {
+            data.joinedAt = new Date();
+        }
+    }
     if (studyStatus !== undefined) data.studyStatus = studyStatus;
 
     if (classId && timeSlotId) {

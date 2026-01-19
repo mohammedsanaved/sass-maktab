@@ -321,7 +321,7 @@ export default function DashboardPage() {
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className='h-10 pl-9 pr-4 rounded-lg text-sm border-primary-700 border  outline-none appearance-none cursor-pointer'
             >
-              {[2023, 2024, 2025, 2026,2027].map((y) => (
+              {[2023, 2024, 2025, 2026, 2027].map((y) => (
                 <option
                   key={y}
                   value={y}
@@ -339,7 +339,10 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
         {/* Card 1: Student Composition */}
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-primary'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-primary'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -366,7 +369,10 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 2: Financial Health */}
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-green-500'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-green-500'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -395,7 +401,10 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 3: Defaulters */}
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-red-500'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-red-500'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -415,7 +424,10 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 4: Classes */}
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-purple-400'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-purple-400'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>Total Classes</p>
@@ -432,7 +444,10 @@ export default function DashboardPage() {
             {overview?.classCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-yellow-400'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-yellow-400'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -451,7 +466,10 @@ export default function DashboardPage() {
             {overview?.newAdmissionsCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-blue-400'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-blue-400'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -470,7 +488,10 @@ export default function DashboardPage() {
             {overview?.teacherCount === 0 && '(Off-Season)'}
           </p>
         </Card>
-        <Card variant="neubrutal" className='flex flex-col justify-between border-l-4 border-cyan-400'>
+        <Card
+          variant='neubrutal'
+          className='flex flex-col justify-between border-l-4 border-cyan-400'
+        >
           <div className='flex justify-between items-start'>
             <div>
               <p className='text-sm font-medium text-gray-500'>
@@ -532,14 +553,14 @@ export default function DashboardPage() {
           </div>
           <div className='mt-4 space-y-2'>
             <div className='flex justify-between text-sm'>
-              <span className='flex items-center text-gray-600 dark:text-gray-300'>
+              <span className='flex items-center text-foreground'>
                 <span className='w-2 h-2 rounded-full bg-emerald-500 mr-2'></span>
                 Regular
               </span>
               <span className='font-semibold'>{attendance?.regular ?? 0}</span>
             </div>
             <div className='flex justify-between text-sm'>
-              <span className='flex items-center text-gray-600 dark:text-gray-300'>
+              <span className='flex items-center text-foreground'>
                 <span className='w-2 h-2 rounded-full bg-amber-500 mr-2'></span>
                 Irregular
               </span>
@@ -548,7 +569,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className='flex justify-between text-sm'>
-              <span className='flex items-center text-gray-600 dark:text-gray-300'>
+              <span className='flex items-center text-foreground'>
                 <span className='w-2 h-2 rounded-full bg-blue-500 mr-2'></span>
                 Completed
               </span>
@@ -592,7 +613,7 @@ export default function DashboardPage() {
                   <Th>Applicant</Th>
                   <Th>Parents Contact</Th>
                   <Th>Proposed Class</Th>
-                  <Th>Status</Th>
+                  <Th>Form Status</Th>
                   <Th>Action</Th>
                 </TableRow>
               </TableHead>
@@ -703,7 +724,7 @@ export default function DashboardPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className='bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 mt-auto'>
+            <div className='bg-background px-4 py-3 flex items-center justify-between border-t border-gray-200 mt-auto'>
               <div className='text-xs text-gray-700 dark:text-gray-400'>
                 Showing{' '}
                 <span className='font-medium'>
@@ -724,7 +745,7 @@ export default function DashboardPage() {
                   size='sm'
                   disabled={tableCurrentPage === 1}
                   onClick={() => setTableCurrentPage((p) => p - 1)}
-                  className='px-2'
+                  className='px-2 cursor-pointer'
                 >
                   <ChevronLeft size={16} />
                 </Button>
@@ -733,7 +754,7 @@ export default function DashboardPage() {
                   size='sm'
                   disabled={tableCurrentPage === totalPages}
                   onClick={() => setTableCurrentPage((p) => p + 1)}
-                  className='px-2'
+                  className='px-2 cursor-pointer'
                 >
                   <ChevronRight size={16} />
                 </Button>

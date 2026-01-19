@@ -13,9 +13,9 @@ import {
   TimeInput,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Edit, Trash2, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface TimeSlot {
   id: string;
@@ -24,10 +24,12 @@ interface TimeSlot {
   endTime: string;
 }
 
+
 export default function ManageTimeSlots() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form State
   const [label, setLabel] = useState('');
@@ -38,6 +40,7 @@ export default function ManageTimeSlots() {
   // Load data on mount
   useEffect(() => {
     const fetchTimeSlots = async () => {
+      setIsLoading(true);
       try {
         const response = await apiFetch('/api/settings/timeslots');
         if (!response.ok) throw new Error('Failed to fetch time slots');
@@ -45,6 +48,8 @@ export default function ManageTimeSlots() {
         setTimeSlots(data);
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchTimeSlots();
@@ -130,61 +135,68 @@ export default function ManageTimeSlots() {
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
-            variant='text'
+            variant='contained'
           >
             {' '}
             Add Time Slot
           </Button>
         </div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <Th>Label</Th>
-              <Th>Start Time</Th>
-              <Th>End Time</Th>
-              <Th>Actions</Th>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {timeSlots.map((slot) => (
-              <TableRow key={slot.id}>
-                <TableCell>
-                  <span className='font-medium'>{slot.label}</span>
-                </TableCell>
-                <TableCell>{slot.startTime}</TableCell>
-                <TableCell>{slot.endTime}</TableCell>
-                <TableCell>
-                  <div className='flex gap-2'>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleOpenModal(slot)}
-                    >
-                      <Edit size={16} className='text-blue-600' />
-                    </Button>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleDelete(slot.id)}
-                    >
-                      <Trash2 size={16} className='text-red-600' />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {timeSlots.length === 0 && (
+        
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="animate-spin text-primary-500" size={40} />
+          </div>
+        ) : (
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className='text-center py-6 text-gray-500'
-                >
-                  No time slots defined.
-                </TableCell>
+                <Th>Label</Th>
+                <Th>Start Time</Th>
+                <Th>End Time</Th>
+                <Th>Actions</Th>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {timeSlots.map((slot) => (
+                <TableRow key={slot.id}>
+                  <TableCell>
+                    <span className='font-medium'>{slot.label}</span>
+                  </TableCell>
+                  <TableCell>{slot.startTime}</TableCell>
+                  <TableCell>{slot.endTime}</TableCell>
+                  <TableCell>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleOpenModal(slot)}
+                      >
+                        <Edit size={16} className='text-blue-600' />
+                      </Button>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleDelete(slot.id)}
+                      >
+                        <Trash2 size={16} className='text-red-600' />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {timeSlots.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className='text-center py-6 text-gray-500'
+                  >
+                    No time slots defined.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       <Modal

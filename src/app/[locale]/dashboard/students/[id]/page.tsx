@@ -68,7 +68,7 @@ export default function StudentProfilePage() {
         </div>
         <div className="flex gap-2">
              {/* Print Button Removed */}
-             <Button color="primary" onClick={() => router.push(`/dashboard/students/${id}/edit`)}>
+             <Button color="primary" className="hover:bg-primary-500 hover:text-white transition-colors duration-300 cursor-pointer" onClick={() => router.push(`/dashboard/students/${id}/edit`)}>
                 <Edit size={18} className="mr-2" /> Edit Details
             </Button>
         </div>
@@ -83,11 +83,11 @@ export default function StudentProfilePage() {
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Full Name / نام</p>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{student.studentName}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{student.studentName}</h1>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Roll Number / رول نمبر</p>
-              <p className="text-xl font-bold text-primary-600">{student.rollNumber || 'N/A'}</p> 
+              <p className="text-xl font-bold text-foreground">{student.rollNumber || 'N/A'}</p> 
               <p className="text-xs text-gray-500">GR No: {student.grNumber || 'N/A'}</p>
             </div>
             <div className="space-y-1">
@@ -100,7 +100,7 @@ export default function StudentProfilePage() {
             </div>
             <div className="space-y-1">
               <p className="text-xs text-gray-400 uppercase font-semibold">Current Class / درجہ</p>
-              <p className="font-bold text-gray-700 dark:text-gray-200">{student.classSession?.classLevel?.name || 'N/A'}</p>
+              <p className="font-bold text-foreground">{student.classSession?.classLevel?.name || 'N/A'}</p>
               <p className="text-xs text-gray-500">{student.classSession?.sectionName || ''}</p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function StudentProfilePage() {
           {/* Personal Details Section */}
           <Card >
             <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-600 mb-6 border-b pb-2">
-              <User size={18} className="mr-2" /> Personal Information <span className="font-urdu ml-auto text-sm text-gray-500">ذاتی معلومات</span>
+              <User size={18} className="mr-2" /> Personal Information <span className="font-urdu ml-auto text-sm text-foreground">ذاتی معلومات</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                 <InfoItem label="Date of Birth" value={student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'} icon={Calendar} />
@@ -122,6 +122,8 @@ export default function StudentProfilePage() {
                 <InfoItem label="Joined At" value={new Date(student.joinedAt).toLocaleDateString()} icon={Calendar} />
                 <div className="md:col-span-2">
                     <InfoItem label="Residential Address" value={student.residence || 'Not Provided'} icon={Home} />
+                </div>
+                <div className="md:col-span-2">
                     <InfoItem label="Permanent Address" value={student.fullPermanentAddress || 'Not Provided'} icon={Home} />
                 </div>
             </div>
@@ -137,9 +139,9 @@ export default function StudentProfilePage() {
                 <InfoItem label="Guardian Profession" value={student.parentGuardianOccupation || 'N/A'} icon={Briefcase} />
                 <InfoItem label="Primary Mobile" value={student.mobile} icon={Phone} link={`tel:${student.mobile}`} />
                 <InfoItem label="Other Contact" value={student.mobileOther || 'N/A'} icon={Phone} />
-                <div className="md:col-span-2 mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2 mt-4 p-4 bg-primary-100/50 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Emergency Contact 1</p>
+                    <p className="text-[10px] uppercase font-bold text-foreground mb-2">Emergency Contact 1</p>
                     <p className="text-sm font-medium">{student.emergencyContactName || 'None'}</p>
                     <p className="text-xs text-gray-500">{student.emergencyContactPhone}</p>
                     </div>
@@ -153,7 +155,7 @@ export default function StudentProfilePage() {
           {/* Office & Session Info */}
           <Card className="bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800">
             <h3 className="flex items-center text-sm font-bold uppercase tracking-wider text-primary-700 dark:text-primary-400 mb-6 border-b border-primary-200 dark:border-primary-800 pb-2">
-              <ClipboardList size={18} className="mr-2" /> Session Details <span className="font-urdu ml-auto text-xs text-gray-500">دفتری معلومات</span>
+              <ClipboardList size={18} className="mr-2" /> Session Details <span className="font-urdu ml-auto text-xs text-foreground">دفتری معلومات</span>
             </h3>
             <div className="space-y-6">
                <div className="flex items-start gap-3">
@@ -162,7 +164,7 @@ export default function StudentProfilePage() {
                   </div>
                   <div className="w-full">
                     <p className="text-xs text-gray-500">Assigned Class</p>
-                    <p className="font-bold text-gray-800 dark:text-gray-100">{student.classSession?.classLevel?.name || 'N/A'}</p>
+                    <p className="font-bold text-foreground">{student.classSession?.classLevel?.name || 'N/A'}</p>
                   </div>
                </div>
 
@@ -172,7 +174,7 @@ export default function StudentProfilePage() {
                   </div>
                   <div className="w-full">
                     <p className="text-xs text-gray-500">Time Slot</p>
-                    <p className="font-bold text-gray-800 dark:text-gray-100">{student.classSession?.timeSlot?.label || 'N/A'}</p>
+                    <p className="font-bold text-foreground">{student.classSession?.timeSlot?.label || 'N/A'}</p>
                   </div>
                </div>
             </div>
@@ -205,7 +207,7 @@ export default function StudentProfilePage() {
                         Pay Arrears Now
                     </Button>
                 ) : null}
-                <Button fullWidth variant="outlined" color="primary" onClick={() => router.push('/dashboard/payments')}>
+                <Button fullWidth className='cursor-pointer hover:bg-primary-500 hover:text-white transition-colors duration-300' variant="outlined" color="primary" onClick={() => router.push(`/dashboard/payments/${student.id}`)}>
                 View Payment History
                 </Button>
               </div>
@@ -219,15 +221,15 @@ export default function StudentProfilePage() {
 
 const InfoItem = ({ label, value, icon: Icon, link }: { label: string, value: string, icon: any, link?: string }) => (
   <div className="flex items-start gap-3">
-    <div className="mt-1 text-gray-400">
+    <div className="mt-1 text-foreground">
       <Icon size={18} />
     </div>
     <div className="flex-1">
-      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{label}</p>
+      <p className="text-[10px] text-foreground font-bold uppercase tracking-tight">{label}</p>
       {link ? (
-        <a href={link} className="text-sm font-medium text-primary-600 hover:underline">{value}</a>
+        <a href={link} className="text-sm font-medium text-gray-500 hover:underline">{value}</a>
       ) : (
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{value}</p>
+        <p className="text-sm font-medium text-gray-500">{value}</p>
       )}
     </div>
   </div>

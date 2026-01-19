@@ -7,12 +7,25 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const studyStatus = searchParams.get('studyStatus');
     const classId = searchParams.get('classId');
     const timeSlotId = searchParams.get('timeSlotId');
+    const academicYear = searchParams.get('academicYear');
+    
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '15', 10);
+    const skip = (page - 1) * limit;
+    
+    // Search parameter
+    const search = searchParams.get('search') || searchParams.get('q') || '';
 
-    const where: any = {};
+    const where: any = {
+        admissionStatus: { in: ['COMPLETED', 'IN_PROGRESS'] },
+    };
 
     if (status) where.status = status;
+    if (studyStatus) where.studyStatus = studyStatus;
     if (classId) where.classSession = { classLevelId: classId };
     if (timeSlotId) {
        // Combine with classId if present, or just filter by classSession
@@ -21,6 +34,27 @@ export async function GET(request: Request) {
            timeSlotId: timeSlotId 
        };
     }
+    
+    // Add academicYear filter - filter by enrollment academicYear
+    if (academicYear) {
+      where.enrollments = {
+        some: {
+          academicYear: academicYear
+        }
+      };
+    }
+    
+    // Add search filter
+    if (search) {
+      where.OR = [
+        { studentName: { contains: search, mode: 'insensitive' } },
+        { rollNumber: { contains: search, mode: 'insensitive' } },
+        { grNumber: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    // Get total count for pagination metadata
+    const total = await prisma.student.count({ where });
 
     const students = await prisma.student.findMany({
       where,
@@ -33,9 +67,22 @@ export async function GET(request: Request) {
         },
         feePayments: {
             select: { paidMonths: true } // Fetch paid months history
+        },
+        enrollments: {
+          include: {
+            classSession: {
+              include: {
+                classLevel: true,
+                timeSlot: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' } // Most recent first
         }
       },
       orderBy: { joinedAt: 'desc' },
+      skip,
+      take: limit,
     });
 
     // Dynamic Fee Calculation
@@ -47,48 +94,31 @@ export async function GET(request: Request) {
 
         // Only calculate for confirmed students with valid fees
         if (student.admissionStatus === 'COMPLETED' && student.monthlyFees > 0) {
+            const referenceDate = new Date(); 
+            referenceDate.setDate(1);
+            referenceDate.setHours(0, 0, 0, 0);
+
             const joinDate = new Date(student.joinedAt);
+            const startCalculationFrom = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
             
-            // Calculate total months since joining (inclusive of joining month if needed, or simple difference)
-            // Logic: (YearDiff * 12) + MonthDiff
-            // Assuming fees start from the joining month.
-            let monthsSinceJoining = (currentDate.getFullYear() - joinDate.getFullYear()) * 12 + (currentDate.getMonth() - joinDate.getMonth());
-            // If currently in the joining month, it counts as 0 difference but we might charge for it? 
-            // Usually if joined today, fees due for this month. So +1.
-            monthsSinceJoining += 1; 
-
-            if (monthsSinceJoining < 0) monthsSinceJoining = 0;
-
             // Flatten all paid months from all payments
-            // paidMonths is array of strings "YYYY-MM"
             const allPaidMonths = new Set(
                 student.feePayments.flatMap(p => p.paidMonths)
             );
 
-            // Logic: Iterate from joining month to current month and check if paid
-            // This is more accurate than simple count subtraction because specific months must be paid.
             let unpaidCount = 0;
-            let checkDate = new Date(joinDate);
+            let totalCounter = 0;
+            let tempDate = new Date(startCalculationFrom);
             
-            // Iterate month by month up to current month
-            // We set date to 1st to avoid end-of-month edge cases when incrementing
-            checkDate.setDate(1); 
-            
-            const currentMonthYearChar = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-
-            // Loop until checkDate's month-year string is > current month-year string
-            // actually simpler: just loop for N months
-            for (let i = 0; i < monthsSinceJoining; i++) {
-                const year = checkDate.getFullYear();
-                const month = String(checkDate.getMonth() + 1).padStart(2, '0');
-                const monthStr = `${year}-${month}`;
-                
+            // Loop from start date to (but not including) current month
+            // This makes the current month's fee NOT an arrear until next month starts.
+            while (tempDate < referenceDate) {
+                totalCounter++;
+                const monthStr = tempDate.toISOString().substring(0, 7);
                 if (!allPaidMonths.has(monthStr)) {
                     unpaidCount++;
                 }
-                
-                // Move to next month
-                checkDate.setMonth(checkDate.getMonth() + 1);
+                tempDate.setMonth(tempDate.getMonth() + 1);
             }
 
             unpaidMonthsCount = unpaidCount;
@@ -96,7 +126,7 @@ export async function GET(request: Request) {
 
             if (unpaidMonthsCount === 0) {
                 paymentStatus = 'Paid';
-            } else if (unpaidMonthsCount < monthsSinceJoining) {
+            } else if (unpaidMonthsCount < totalCounter) {
                 paymentStatus = 'Partial';
             } else {
                 paymentStatus = 'Unpaid';
@@ -115,7 +145,18 @@ export async function GET(request: Request) {
         };
     });
 
-    return NextResponse.json(studentsWithFees);
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+        data: studentsWithFees,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages
+        }
+    });
   } catch (error) {
     console.error('Error fetching students:', error);
     return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
@@ -126,13 +167,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
-        studentName, fatherName, gender, mobile, dateOfBirth, 
+        studentName, fatherName, gender, mobile, dateOfBirth, age,
         formNo, grNumber, type, 
         hafizCategory, fullTimeSubCategory,
         admissionFee, monthlyFees,
-        status, admissionStatus,
+        status, admissionStatus, studyStatus,
         residence, fullPermanentAddress,
+        parentGuardianOccupation, previousSchool,
         emergencyContactName, emergencyContactPhone,
+        remarks,
         classId, timeSlotId, academicYear
     } = body;
 
@@ -228,6 +271,7 @@ export async function POST(request: Request) {
             gender,
             mobile,
             dateOfBirth: new Date(dateOfBirth),
+            age: age ? parseInt(age) : undefined,
             grNumber: finalGrNumber,
             formNo: finalFormNo,
             rollNumber: generatedRollNumber,
@@ -238,10 +282,14 @@ export async function POST(request: Request) {
             monthlyFees: monthlyFees ? parseFloat(monthlyFees) : 0,
             residence,
             fullPermanentAddress,
+            parentGuardianOccupation,
+            previousTraining: previousSchool, // Map previousSchool from form to previousTraining in schema
             emergencyContactName,
             emergencyContactPhone,
+            remarks,
             status: status || 'NEW',
             admissionStatus: admissionStatus || 'COMPLETED',
+            studyStatus: studyStatus || 'REGULAR',
             joinedAt: new Date(),
         };
 

@@ -108,7 +108,7 @@ export default function EditStudentPage() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
               Edit Student <span className="text-gray-400 font-normal">|</span> <span className="font-urdu text-lg">ترمیم</span>
             </h2>
             <p className="text-sm text-gray-500">Updating record for {formData.studentName}</p>
@@ -125,16 +125,19 @@ export default function EditStudentPage() {
                 label="Form No. (فارم نمبر)" 
                 value={formData.formNo || ''} 
                 onChange={e => handleChange('formNo', e.target.value)} 
+                disabled={true}
               />
               <TextField 
                 label="Gr. No. (جنرل رجسٹر نمبر)" 
                 value={formData.grNumber || ''} 
                 onChange={e => handleChange('grNumber', e.target.value)} 
+                disabled={true}
               />
               <TextField 
                 label="Roll Number" 
                 value={formData.rollNumber || ''} 
                 onChange={e => handleChange('rollNumber', e.target.value)} 
+                disabled={true}
               />
            </div>
         </Card>
@@ -227,9 +230,9 @@ export default function EditStudentPage() {
               />
            </div>
 
-           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-primary-100/50 rounded-lg">
               <div>
-                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-4">Emergency Contact 1</h4>
+                  <h4 className="text-xs font-bold text-foreground uppercase mb-4">Emergency Contact 1</h4>
                   <TextField 
                     label="Name" 
                     value={formData.emergencyContactName || ''} 
@@ -321,6 +324,22 @@ export default function EditStudentPage() {
                 value={formData.monthlyFees || 0} 
                 onChange={e => handleChange('monthlyFees', Number(e.target.value))} 
               />
+              <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Study Status</label>
+                  <Select 
+                     options={Object.values(StudyStatus).map(s => ({ value: s, label: s }))}
+                     value={formData.studyStatus}
+                     onChange={e => handleChange('studyStatus', e.target.value)}
+                  />
+              </div>
+              <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Admission Status</label>
+                  <Select 
+                     options={Object.values(AdmissionStatus).map(s => ({ value: s, label: s }))}
+                     value={formData.admissionStatus}
+                     onChange={e => handleChange('admissionStatus', e.target.value)}
+                  />
+              </div>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -335,14 +354,6 @@ export default function EditStudentPage() {
                 value={formData.remarks || ''} 
                 onChange={e => handleChange('remarks', e.target.value)} 
               />
-              <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Admission Status</label>
-                  <Select 
-                     options={Object.values(AdmissionStatus).map(s => ({ value: s, label: s }))}
-                     value={formData.admissionStatus}
-                     onChange={e => handleChange('admissionStatus', e.target.value)}
-                  />
-              </div>
            </div>
         </Card>
 

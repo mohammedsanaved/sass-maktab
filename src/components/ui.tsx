@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 
     const sizeStyles = {
       sm: 'px-3 py-1.5 text-xs',
@@ -43,13 +43,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       contained: {
         primary:
-          'bg-primary-100 hover:bg-primary-700 text-white shadow-md active:shadow-sm',
+          'bg-primary-100 hover:bg-primary-700 text-foreground shadow-md active:shadow-sm',
         secondary:
-          'bg-secondary-500 hover:bg-secondary-600 text-white shadow-md active:shadow-sm focus:ring-secondary-500',
+          'bg-secondary-500 hover:bg-secondary-600 text-foreground shadow-md active:shadow-sm focus:ring-secondary-500',
         danger:
-          'bg-red-600 hover:bg-red-700 text-white shadow-md active:shadow-sm focus:ring-red-500',
+          'bg-red-600 hover:bg-red-700 text-foreground shadow-md active:shadow-sm focus:ring-red-500',
         success:
-          'bg-green-600 hover:bg-green-700 text-white shadow-md active:shadow-sm focus:ring-green-500',
+          'bg-green-600 hover:bg-green-700 text-foreground shadow-md active:shadow-sm focus:ring-green-500',
       },
       outlined: {
         primary:
@@ -94,7 +94,7 @@ Button.displayName = 'Button';
 
 // --- TextField (Input) ---
 interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: boolean;
   helperText?: string;
   icon?: LucideIcon;
@@ -115,42 +115,28 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     ref
   ) => {
     return (
-      <div
-        className={`relative mb-4 ${fullWidth ? 'w-full' : ''} ${className}`}
-      >
-        {Icon && (
-          <div className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
-            <Icon size={18} />
-          </div>
+      <div className={`flex flex-col gap-1.5 mb-4 ${fullWidth ? 'w-full' : ''} ${className}`}>
+        {label && (
+          <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
+            {label}
+          </label>
         )}
-        <input
-          ref={ref}
-          placeholder=' '
-          className={`peer w-full h-12 bg-transparent text-foreground placeholder-transparent border-b-2 
-          ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
-          focus:outline-none focus:border-primary-500 
-          ${Icon ? 'pl-10' : 'pl-1'}`}
-          {...props}
-        />
-        <label
-          className={`absolute left-0 -top-3.5 text-gray-600 dark:text-gray-400 text-xs transition-all 
-          peer-placeholder-shown:text-base peer-placeholder-shown:top-3 
-          ${
-            Icon
-              ? 'peer-placeholder-shown:left-10'
-              : 'peer-placeholder-shown:left-1'
-          }
-          peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-primary-500 peer-focus:left-0 cursor-text
-          ${error ? 'text-red-500 peer-focus:text-red-500' : ''}`}
-        >
-          {label}
-        </label>
+        <div className="relative">
+          {Icon && (
+            <div className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
+              <Icon size={16} />
+            </div>
+          )}
+          <input
+            ref={ref}
+            className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'} 
+            ${Icon ? 'pl-9' : 'pl-3'}`}
+            {...props}
+          />
+        </div>
         {helperText && (
-          <p
-            className={`text-xs mt-1 ${
-              error ? 'text-red-500' : 'text-gray-500'
-            }`}
-          >
+          <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
             {helperText}
           </p>
         )}
@@ -265,8 +251,8 @@ export const TimeInput: React.FC<TimeInputProps> = ({
   };
 
   return (
-    <div className={`relative mb-4 ${className}`}>
-      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-2">
+    <div className={`flex flex-col gap-1.5 mb-4 ${className}`}>
+      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
         {label}
       </label>
       <div className="flex gap-2 items-center">
@@ -278,9 +264,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           value={hour}
           onChange={handleHourChange}
           placeholder="09"
-          className={`w-16 h-12 px-3 text-center bg-transparent text-foreground border-b-2 
-            ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
-            focus:outline-none focus:border-primary-500`}
+          className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center"
         />
         <span className="text-foreground text-xl font-bold">:</span>
         {/* Minute Input */}
@@ -291,19 +275,17 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           value={minute}
           onChange={handleMinuteChange}
           placeholder="00"
-          className={`w-16 h-12 px-3 text-center bg-transparent text-foreground border-b-2 
-            ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} 
-            focus:outline-none focus:border-primary-500`}
+          className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center"
         />
         {/* AM/PM Toggle */}
-        <div className="flex border-b-2 border-gray-300 dark:border-gray-600 h-12">
+        <div className="flex rounded-md border border-input h-10 overflow-hidden">
           <button
             type="button"
             onClick={() => handlePeriodChange('AM')}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${
               period === 'AM'
                 ? 'bg-primary-500 text-white'
-                : 'bg-transparent text-foreground hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'bg-transparent text-foreground hover:bg-muted'
             }`}
           >
             AM
@@ -311,10 +293,10 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           <button
             type="button"
             onClick={() => handlePeriodChange('PM')}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${
               period === 'PM'
                 ? 'bg-primary-500 text-white'
-                : 'bg-transparent text-foreground hover:bg-gray-100 dark:hover:bg-gray-700'
+                : 'bg-transparent text-foreground hover:bg-muted'
             }`}
           >
             PM
@@ -322,7 +304,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
         </div>
       </div>
       {helperText && (
-        <p className={`text-xs mt-1 ${error ? 'text-red-500' : 'text-gray-500'}`}>
+        <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
           {helperText}
         </p>
       )}
@@ -406,21 +388,39 @@ export const TableCell: React.FC<
 // --- Select ---
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: { value: string | number; label: string }[];
+  label?: string;
+  error?: boolean;
+  helperText?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ options, className = '', ...props }, ref) => {
-    const baseStyles =
-      'w-full h-12 px-3 py-2 bg-background border border-gray-300 border-primary-500 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm';
-
+  ({ options, className = '', label, error, helperText, ...props }, ref) => {
     return (
-      <select ref={ref} className={`${baseStyles} ${className}`} {...props}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className={`flex flex-col gap-1.5 mb-4 w-full ${className}`}>
+        {label && (
+          <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
+            {label}
+          </label>
+        )}
+        <select
+          ref={ref}
+          className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 
+          ${error ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary-500'} 
+          ${className}`}
+          {...props}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {helperText && (
+          <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {helperText}
+          </p>
+        )}
+      </div>
     );
   }
 );
@@ -510,13 +510,13 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Content container to handle centering and sizing */}
       <div className='relative bg-background rounded-xl shadow-2xl transform transition-all sm:max-w-lg w-full overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]'>
         <div className='px-6 pt-6 pb-4 overflow-y-auto'>
-          <h3 className='text-xl font-bold text-gray-900 dark:text-white mb-2'>
+          <h3 className='text-xl font-bold text-foreground mb-2'>
             {title}
           </h3>
           <div className='mt-4'>{children}</div>
         </div>
         {actions && (
-          <div className='bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex flex-row-reverse gap-3 border-t border-gray-100 dark:border-gray-700'>
+          <div className='bg-primary-50 px-6 py-4 flex flex-row-reverse gap-3 border-t border-gray-100'>
             {actions}
           </div>
         )}

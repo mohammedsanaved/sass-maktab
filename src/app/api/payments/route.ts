@@ -19,8 +19,12 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // 'PAID', 'UNPAID', 'ALL' || null
 
     // 3. Build Where Query
-    const where: any = {};
+    const where: any = {
+      studyStatus: { in: ['REGULAR', 'IRREGULAR'] }
+    };
+    where.admissionStatus = 'COMPLETED';
 
+    // Search filter - uses OR for name/rollNumber matching
     if (search) {
       where.OR = [
         { studentName: { contains: search, mode: 'insensitive' } },
@@ -39,15 +43,32 @@ export async function GET(request: NextRequest) {
     currentMonthStart.setDate(1);
     currentMonthStart.setHours(0, 0, 0, 0);
 
+    // Status filter - combine with search using AND logic
     if (status === 'PAID') {
         where.lastFeePaidMonth = {
             gte: currentMonthStart
         };
     } else if (status === 'UNPAID') {
-        where.OR = [
-            { lastFeePaidMonth: null },
-            { lastFeePaidMonth: { lt: currentMonthStart } }
-        ];
+        // If search already set OR, we need to combine properly
+        // Use AND with nested OR for unpaid status
+        const unpaidCondition = {
+            OR: [
+                { lastFeePaidMonth: null },
+                { lastFeePaidMonth: { lt: currentMonthStart } }
+            ]
+        };
+        
+        // If search exists, we need to wrap both in AND
+        if (search) {
+            const searchOr = where.OR;
+            delete where.OR;
+            where.AND = [
+                { OR: searchOr },
+                unpaidCondition
+            ];
+        } else {
+            where.OR = unpaidCondition.OR;
+        }
     }
     
     // 4. Counts for Pagination
@@ -73,8 +94,6 @@ export async function GET(request: NextRequest) {
     });
     
     // 6. Arrears Calculation Logic
-    // Reference start Date: July 1st, 2025
-    const arrearsStartDate = new Date(2025, 6, 1); // July is index 6
     const referenceDate = new Date(); 
     referenceDate.setDate(1);
     referenceDate.setHours(0, 0, 0, 0);
@@ -84,7 +103,7 @@ export async function GET(request: NextRequest) {
         let arrearsAmount = 0;
 
         const joinDate = new Date(s.joinedAt);
-        const startCalculationFrom = joinDate > arrearsStartDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : arrearsStartDate;
+        const startCalculationFrom = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
         
         // Collect all paid months across all transactions
         const allPaidMonths = new Set<string>();
@@ -94,9 +113,10 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Loop from startCalculationFrom to referenceDate (current month inclusive)
+        // Loop from startCalculationFrom to (but not including) referenceDate
+        // This makes the current month's fee NOT an arrear until next month starts.
         let tempDate = new Date(startCalculationFrom);
-        while (tempDate <= referenceDate) {
+        while (tempDate < referenceDate) {
             const monthStr = tempDate.toISOString().substring(0, 7);
             if (!allPaidMonths.has(monthStr)) {
                 arrearsMonths++;
@@ -104,6 +124,14 @@ export async function GET(request: NextRequest) {
             }
             tempDate.setMonth(tempDate.getMonth() + 1);
         }
+
+        // Get latest payment (feePayments is already sorted desc by paymentDate)
+        const latestPayment = s.feePayments && s.feePayments.length > 0 ? {
+            paymentDate: s.feePayments[0].paymentDate,
+            amount: s.feePayments[0].amount,
+            paidMonths: s.feePayments[0].paidMonths || [],
+            remarks: s.feePayments[0].remarks || null
+        } : null;
 
         return {
             id: s.id,
@@ -118,6 +146,7 @@ export async function GET(request: NextRequest) {
                 months: arrearsMonths,
                 amount: arrearsAmount
             },
+            latestPayment,
             classSession: s.classSession ? {
                 classLevelId: s.classSession.classLevelId,
                 classLevelName: s.classSession.classLevel.name,

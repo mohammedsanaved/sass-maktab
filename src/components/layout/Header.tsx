@@ -107,10 +107,10 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isUrdu }) => {
 
         <ThemeSwitcher />
 
-        <button className='p-2 text-foreground hover:bg-primary-50 hover:bg-primary-200 rounded-full transition-colors relative'>
+        {/* <button className='p-2 text-foreground hover:bg-primary-50 hover:bg-primary-200 rounded-full transition-colors relative'>
           <Bell className='w-5 h-5' />
           <span className='absolute top-1 right-1 rtl:left-1 rtl:right-auto w-2 h-2 bg-red-500 rounded-full'></span>
-        </button>
+        </button> */}
 
         <div className='flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-700 p-1 rounded-lg transition-colors'>
           <div className='w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center'>

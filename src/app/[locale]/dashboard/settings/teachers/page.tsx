@@ -13,7 +13,7 @@ import {
   Badge,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { Edit, Trash2, Plus, Phone, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +29,7 @@ export default function ManageTeachers() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   // Form State
@@ -41,6 +42,7 @@ export default function ManageTeachers() {
   useEffect(() => {
     // Replace with API call
     const fetchTeachers = async () => {
+      setIsLoading(true);
       try {
         const response = await apiFetch('/api/settings/teachers');
         if (!response.ok) throw new Error('Failed to fetch teachers');
@@ -49,6 +51,8 @@ export default function ManageTeachers() {
       } catch (error) {
         console.error(error);
         // Handle error state in UI
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchTeachers();
@@ -143,74 +147,81 @@ export default function ManageTeachers() {
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
-            variant='text'
+            variant='contained'
           >
             {' '}
             Add Teacher
           </Button>
         </div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <Th>Name</Th>
-              <Th>Contact</Th>
-              <Th>Role</Th>
-              <Th>Actions</Th>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {teachers.map((teacher) => (
-              <TableRow key={teacher.id}>
-                <TableCell>
-                  <div className='font-medium text-foreground'>
-                    {teacher.name}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className='flex flex-col space-y-1'>
-                    <span className='flex items-center text-xs text-gray-500'>
-                      <Mail size={12} className='mr-1' /> {teacher.email}
-                    </span>
-                    <span className='flex items-center text-xs text-gray-500'>
-                      <Phone size={12} className='mr-1' /> {teacher.phone}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge color='blue'>{teacher.role}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className='flex gap-2'>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleOpenModal(teacher)}
-                    >
-                      <Edit size={16} className='text-blue-600' />
-                    </Button>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleDelete(teacher.id)}
-                    >
-                      <Trash2 size={16} className='text-red-600' />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {teachers.length === 0 && (
+        
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="animate-spin text-primary-500" size={40} />
+          </div>
+        ) : (
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className='text-center py-6 text-gray-500'
-                >
-                  No teachers found.
-                </TableCell>
+                <Th>Name</Th>
+                <Th>Contact</Th>
+                <Th>Role</Th>
+                <Th>Actions</Th>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {teachers.map((teacher) => (
+                <TableRow key={teacher.id}>
+                  <TableCell>
+                    <div className='font-medium text-foreground'>
+                      {teacher.name}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className='flex flex-col space-y-1'>
+                      <span className='flex items-center text-xs text-gray-500'>
+                        <Mail size={12} className='mr-1' /> {teacher.email}
+                      </span>
+                      <span className='flex items-center text-xs text-gray-500'>
+                        <Phone size={12} className='mr-1' /> {teacher.phone}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge color='blue'>{teacher.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleOpenModal(teacher)}
+                      >
+                        <Edit size={16} className='text-blue-600' />
+                      </Button>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleDelete(teacher.id)}
+                      >
+                        <Trash2 size={16} className='text-red-600' />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {teachers.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className='text-center py-6 text-gray-500'
+                  >
+                    No teachers found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       <Modal

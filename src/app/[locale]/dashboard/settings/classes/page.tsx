@@ -12,7 +12,7 @@ import {
   TextField,
   TableBody,
 } from '@/components/ui';
-import { Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Edit, Trash2, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -26,6 +26,7 @@ export default function ManageClasses() {
   const [classes, setClasses] = useState<ClassLevel[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassLevel | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Form State
   const [name, setName] = useState('');
@@ -34,6 +35,7 @@ export default function ManageClasses() {
 
   useEffect(() => {
     const fetchClasses = async () => {
+      setIsLoading(true);
       try {
         const response = await apiFetch('/api/settings/classes');
         if (!response.ok) throw new Error('Failed to fetch classes');
@@ -41,6 +43,8 @@ export default function ManageClasses() {
         setClasses(data);
       } catch (error) {
         console.error('Error fetching classes:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchClasses();
@@ -124,59 +128,66 @@ export default function ManageClasses() {
           <Button
             onClick={() => handleOpenModal()}
             startIcon={<Plus size={16} />}
-            variant='text'
+            variant='contained'
           >
             {' '}
             Add Class
           </Button>
         </div>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <Th>Class Name</Th>
-              <Th>Description</Th>
-              <Th>Actions</Th>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {classes.map((cls) => (
-              <TableRow key={cls.id}>
-                <TableCell>
-                  <span className='font-medium'>{cls.name}</span>
-                </TableCell>
-                <TableCell>{cls.description || '-'}</TableCell>
-                <TableCell>
-                  <div className='flex gap-2'>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleOpenModal(cls)}
-                    >
-                      <Edit size={16} className='text-blue-600' />
-                    </Button>
-                    <Button
-                      variant='text'
-                      size='sm'
-                      onClick={() => handleDelete(cls.id)}
-                    >
-                      <Trash2 size={16} className='text-red-600' />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {classes.length === 0 && (
+        
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="animate-spin text-primary-500" size={40} />
+          </div>
+        ) : (
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell
-                  colSpan={3}
-                  className='text-center py-6 text-gray-500'
-                >
-                  No classes found.
-                </TableCell>
+                <Th>Class Name</Th>
+                <Th>Description</Th>
+                <Th>Actions</Th>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {classes.map((cls) => (
+                <TableRow key={cls.id}>
+                  <TableCell>
+                    <span className='font-medium'>{cls.name}</span>
+                  </TableCell>
+                  <TableCell>{cls.description || '-'}</TableCell>
+                  <TableCell>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleOpenModal(cls)}
+                      >
+                        <Edit size={16} className='text-blue-600' />
+                      </Button>
+                      <Button
+                        variant='text'
+                        size='sm'
+                        onClick={() => handleDelete(cls.id)}
+                      >
+                        <Trash2 size={16} className='text-red-600' />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {classes.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className='text-center py-6 text-gray-500'
+                  >
+                    No classes found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       <Modal

@@ -133,9 +133,9 @@ export default function TeachersPage() {
           <h2 className="text-2xl font-bold text-foreground">Teachers & Schedules</h2>
           <p className="text-sm text-gray-500">Manage teacher assignments and class schedules</p>
         </div>
-        <Button variant="contained" color="primary" onClick={() => alert("Redirect to Add Teacher")}>
+        {/* <Button variant="contained" color="primary" onClick={() => alert("Redirect to Add Teacher")}>
           + Add Teacher
-        </Button>
+        </Button> */}
       </div>
 
       {/* Filters */}
@@ -151,8 +151,9 @@ export default function TeachersPage() {
           />
           
           <div className="mb-0">
-             <label className="text-xs font-semibold text-gray-400 uppercase mb-2 block">Filter by Class</label>
+             {/* <label className="text-xs font-semibold text-gray-400 uppercase mb-2 block">Filter by Class</label> */}
              <Select 
+             label='Filter by Class'
                 options={[{value: '', label: 'All Classes'}, ...classLevels.map(c => ({ value: c.id, label: c.name }))]}
                 value={filterClassId}
                 onChange={(e) => setFilterClassId(e.target.value)}
@@ -160,8 +161,9 @@ export default function TeachersPage() {
           </div>
 
            <div className="mb-0">
-             <label className="text-xs font-semibold text-gray-400 uppercase mb-2 block">Filter by Time Slot</label>
+             {/* <label className="text-xs font-semibold text-gray-400 uppercase mb-2 block">Filter by Time Slot</label> */}
              <Select 
+             label='Filter by Time Slot'
                 options={[{value: '', label: 'All Time Slots'}, ...timeSlots.map(ts => ({ value: ts.id, label: ts.label }))]}
                 value={filterTimeSlotId}
                 onChange={(e) => setFilterTimeSlotId(e.target.value)}
@@ -267,7 +269,7 @@ export default function TeachersPage() {
                 </div>
                 <div>
                   <p className="text-xs text-primary-600 font-bold uppercase tracking-wider">Teacher</p>
-                  <p className="font-bold text-gray-800 dark:text-white">{editingTeacher?.name}</p>
+                  <p className="font-bold text-foreground">{editingTeacher?.name}</p>
                 </div>
             </div>
 
