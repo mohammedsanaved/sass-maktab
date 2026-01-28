@@ -121,13 +121,14 @@ import React, { ReactNode, useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useLocale } from 'next-intl';
+import { useSidebar } from '@/context/SidebarContext';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const { isSidebarOpen, closeSidebar } = useSidebar();
   const [mounted, setMounted] = useState(false);
   const locale = useLocale();
   const isUrdu = locale === 'ur';
@@ -141,25 +142,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       window.location.href = `/${locale}/login`;
       return;
     }
-
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
-      }
-    };
-
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  }, [locale]);
 
   if (!mounted) {
     return null;
@@ -171,10 +154,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         isUrdu ? 'font-urdu' : ''
       }`}
     >
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <Sidebar />
 
       <div className='flex-1 flex flex-col overflow-hidden w-full'>
-        <Header toggleSidebar={toggleSidebar} isUrdu={isUrdu} />
+        <Header isUrdu={isUrdu} />
 
         <main className='flex-1 overflow-x-hidden overflow-y-auto bg-background p-6'>
           {children}
@@ -184,7 +167,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {isSidebarOpen && (
         <div
           className='fixed inset-0 bg-black/50 z-20 md:hidden'
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
         />
       )}
     </div>

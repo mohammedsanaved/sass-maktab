@@ -54,6 +54,13 @@ interface TimeSlot {
   label: string;
 }
 
+interface ClassSession {
+  id: string;
+  classLevel: { name: string };
+  timeSlot: { label: string };
+  teacher: { name: string };
+}
+
 import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
 
@@ -99,6 +106,7 @@ const PaymentsPage = () => {
   const debouncedSearch = useDebounce(search, 300);
   const [classId, setClassId] = useState('');
   const [timeSlotId, setTimeSlotId] = useState('');
+  const [classSessionId, setClassSessionId] = useState('');
   const [status, setStatus] = useState('ALL'); // 'ALL', 'PAID', 'UNPAID'
 
   // Ref for Printing
@@ -113,6 +121,7 @@ const PaymentsPage = () => {
   // Dropdown options
   const [classLevels, setClassLevels] = useState<ClassLevel[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [availableSessions, setAvailableSessions] = useState<ClassSession[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +140,7 @@ const PaymentsPage = () => {
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(classId && { classId }),
       ...(timeSlotId && { timeSlotId }),
+      ...(classSessionId && { classSessionId }),
       ...(status !== 'ALL' && { status }),
     });
 
@@ -150,17 +160,19 @@ const PaymentsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch, classId, timeSlotId, status]);
+  }, [page, debouncedSearch, classId, timeSlotId, classSessionId, status]);
 
   // Fetch dropdown data
   const fetchFilters = useCallback(async () => {
     try {
-      const [classesRes, timeslotsRes] = await Promise.all([
+      const [classesRes, timeslotsRes, sessionsRes] = await Promise.all([
         apiFetch('/api/settings/classes'),
         apiFetch('/api/settings/timeslots'),
+        apiFetch('/api/settings/class-sessions'),
       ]);
       if (classesRes.ok) setClassLevels(await classesRes.json());
       if (timeslotsRes.ok) setTimeSlots(await timeslotsRes.json());
+      if (sessionsRes.ok) setAvailableSessions(await sessionsRes.json());
     } catch (err) {
       console.error('Failed to fetch filter options');
     }
@@ -321,6 +333,18 @@ const PaymentsPage = () => {
             options={[
               { value: '', label: 'All Time Slots' },
               ...timeSlots.map((t) => ({ value: t.id, label: t.label })),
+            ]}
+          />
+          <Select
+            value={classSessionId}
+            label='Filter by Teacher/Session'
+            onChange={(e) => setClassSessionId(e.target.value)}
+            options={[
+              { value: '', label: 'All Teachers' },
+              ...availableSessions.map((s) => ({
+                value: s.id,
+                label: `${s.classLevel?.name} - ${s.timeSlot?.label} (${s.teacher?.name})`,
+              })),
             ]}
           />
           {/* <div className='flex items-center space-x-2'>

@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const classId = searchParams.get('classId');
     const timeSlotId = searchParams.get('timeSlotId');
+    const classSessionId = searchParams.get('classSessionId');
     const status = searchParams.get('status'); // 'PAID', 'UNPAID', 'ALL' || null
 
     // 3. Build Where Query
@@ -32,10 +33,11 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    if (classId || timeSlotId) {
+    if (classId || timeSlotId || classSessionId) {
        where.classSession = {
            ...(classId ? { classLevelId: classId } : {}),
-           ...(timeSlotId ? { timeSlotId: timeSlotId } : {})
+           ...(timeSlotId ? { timeSlotId: timeSlotId } : {}),
+           ...(classSessionId ? { id: classSessionId } : {})
        };
     }
 

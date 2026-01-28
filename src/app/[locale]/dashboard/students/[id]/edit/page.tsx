@@ -51,6 +51,16 @@ export default function EditStudentPage() {
     init();
   }, [id]);
 
+  const formatTo12Hour = (timeStr: string): string => {
+    if (!timeStr) return '--:--';
+    if (timeStr.includes(' ')) return timeStr;
+    const [hours, minutes] = timeStr.split(':');
+    const h24 = parseInt(hours, 10);
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+    return `${h12.toString().padStart(2, '0')}:${(minutes || '00').padStart(2, '0')} ${period}`;
+  };
+
   const handleChange = (field: keyof Student, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -275,7 +285,7 @@ export default function EditStudentPage() {
               <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Time Slot (مناسب وقت)</label>
                   <Select 
-                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: `${t.label} (${t.startTime})` }))]}
+                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: `${t.label} (${formatTo12Hour(t.startTime)})` }))]}
                      value={
                          (formData as any).timeSlotId || formData.classSession?.timeSlotId || ''
                      }

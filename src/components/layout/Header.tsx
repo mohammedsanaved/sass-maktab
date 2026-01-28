@@ -58,20 +58,19 @@
 //       </div>
 //     </header>
 //   );
-// };
 import React from 'react';
 import { Menu, Globe, Bell, User } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { useSidebar } from '@/context/SidebarContext';
 
 interface HeaderProps {
-  toggleSidebar: () => void;
   isUrdu: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isUrdu }) => {
-  // const t = useTranslations('Header');
+export const Header: React.FC<HeaderProps> = ({ isUrdu }) => {
+  const { toggleSidebar } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
   const locale = useLocale();

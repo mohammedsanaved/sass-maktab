@@ -61,6 +61,16 @@ export default function NewStudentPage() {
     };
     fetchSettings();
   }, []);
+  
+  const formatTo12Hour = (timeStr: string): string => {
+    if (!timeStr) return '--:--';
+    if (timeStr.includes(' ')) return timeStr;
+    const [hours, minutes] = timeStr.split(':');
+    const h24 = parseInt(hours, 10);
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+    return `${h12.toString().padStart(2, '0')}:${(minutes || '00').padStart(2, '0')} ${period}`;
+  };
 
   const initialValues = {
     formNo: '',
@@ -300,7 +310,7 @@ export default function NewStudentPage() {
                   <FormikSelect 
                      name="timeSlotId"
                      label="Time Slot (مناسب وقت)"
-                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: `${t.label} (${t.startTime})` }))]}
+                     options={[{value: '', label: 'Select Time'}, ...timeSlots.map(t => ({ value: t.id, label: `${t.label} (${formatTo12Hour(t.startTime)})` }))]}
                     required
                   />
 

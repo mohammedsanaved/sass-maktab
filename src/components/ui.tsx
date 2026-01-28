@@ -149,7 +149,7 @@ TextField.displayName = 'TextField';
 // --- TimeInput (12-hour format with AM/PM) ---
 interface TimeInputProps {
   label: string;
-  value: string; // Expected format: "HH:mm" (24-hour)
+  value: string; // Expected format: "HH:mm AM/PM" or "HH:mm" (handles both)
   onChange: (value: string) => void;
   error?: boolean;
   helperText?: string;
@@ -166,93 +166,78 @@ export const TimeInput: React.FC<TimeInputProps> = ({
   className = '',
   placeholder = '09:00 AM',
 }) => {
-  // Convert 24-hour to 12-hour format
-  const convertTo12Hour = (time24: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
-    if (!time24) return { hour: '', minute: '', period: 'AM' };
+  // Helper to parse value into 12-hour components
+  const get12HourComponents = (timeStr: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
+    if (!timeStr) return { hour: '', minute: '', period: 'AM' };
     
-    const [hours, minutes] = time24.split(':');
+    // Check if it's already "HH:mm AM/PM"
+    if (timeStr.includes(' ')) {
+      const [time, period] = timeStr.split(' ');
+      const [hour, minute] = time.split(':');
+      return { 
+        hour: hour || '', 
+        minute: minute || '', 
+        period: (period?.toUpperCase() === 'PM' ? 'PM' : 'AM') 
+      };
+    }
+    
+    // Fallback: handle "HH:mm" (24-hour)
+    const [hours, minutes] = timeStr.split(':');
     const hour24 = parseInt(hours, 10);
     const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM';
     const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
     
     return {
-      hour: hour12.toString(),
+      hour: hour12.toString().padStart(2, '0'),
       minute: minutes || '00',
       period,
     };
   };
 
-  // Convert 12-hour to 24-hour format
-  const convertTo24Hour = (hour: string, minute: string, period: 'AM' | 'PM'): string => {
-    // Allow empty values - don't convert until both are filled
-    if (!hour && !minute) return '';
-    
-    // Default empty values to allow partial input
-    const hourValue = hour || '12';
-    const minuteValue = minute || '00';
-    
-    let hour24 = parseInt(hourValue, 10);
-    
-    // Handle invalid numbers
-    if (isNaN(hour24)) return '';
-    
-    if (period === 'AM' && hour24 === 12) {
-      hour24 = 0;
-    } else if (period === 'PM' && hour24 !== 12) {
-      hour24 += 12;
-    }
-    
-    return `${hour24.toString().padStart(2, '0')}:${minuteValue.padStart(2, '0')}`;
+  const { hour, minute, period } = get12HourComponents(value);
+
+  const formatAndNotify = (h: string, m: string, p: 'AM' | 'PM') => {
+    // We store as "HH:mm AM/PM" string
+    const formattedHour = h.padStart(2, '0');
+    const formattedMinute = (m || '00').padStart(2, '0');
+    onChange(`${formattedHour}:${formattedMinute} ${p}`);
   };
 
-  const { hour, minute, period } = convertTo12Hour(value);
-
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHour = e.target.value;
+    let newHour = e.target.value;
     
-    // Allow empty or valid hour (1-12)
     if (newHour === '') {
-      onChange(''); // Clear the value
+      onChange('');
       return;
     }
     
     const hourNum = parseInt(newHour, 10);
-    
-    // Validate hour (1-12)
     if (hourNum >= 1 && hourNum <= 12) {
-      const time24 = convertTo24Hour(newHour, minute || '00', period);
-      onChange(time24);
+      formatAndNotify(newHour, minute, period);
     }
   };
 
   const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMinute = e.target.value;
     
-    // Allow empty or valid minute (0-59)
     if (newMinute === '') {
-      // Keep hour but clear minute
-      const time24 = convertTo24Hour(hour || '12', '00', period);
-      onChange(time24);
+      formatAndNotify(hour, '00', period);
       return;
     }
     
     const minuteNum = parseInt(newMinute, 10);
-    
-    // Validate minute (0-59)
     if (minuteNum >= 0 && minuteNum <= 59) {
-      const time24 = convertTo24Hour(hour || '12', newMinute, period);
-      onChange(time24);
+      formatAndNotify(hour, newMinute, period);
     }
   };
 
   const handlePeriodChange = (newPeriod: 'AM' | 'PM') => {
-    const time24 = convertTo24Hour(hour || '12', minute || '00', newPeriod);
-    onChange(time24);
+    formatAndNotify(hour || '12', minute || '00', newPeriod);
   };
 
   return (
     <div className={`flex flex-col gap-1.5 mb-4 ${className}`}>
-      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+      <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
         {label}
       </label>
       <div className="flex gap-2 items-center">
@@ -261,10 +246,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           type="number"
           min="1"
           max="12"
-          value={hour}
+          value={hour === '00' ? '' : hour.replace(/^0/, '')} // Don't show leading zero for single digit input focus if user prefers
           onChange={handleHourChange}
           placeholder="09"
-          className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center"
+          className={`flex h-10 w-16 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'}`}
         />
         <span className="text-foreground text-xl font-bold">:</span>
         {/* Minute Input */}
@@ -275,10 +261,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           value={minute}
           onChange={handleMinuteChange}
           placeholder="00"
-          className="flex h-10 w-16 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center"
+          className={`flex h-10 w-16 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'}`}
         />
         {/* AM/PM Toggle */}
-        <div className="flex rounded-md border border-input h-10 overflow-hidden">
+        <div className={`flex rounded-md border h-10 overflow-hidden ${error ? 'border-red-500' : 'border-input'}`}>
           <button
             type="button"
             onClick={() => handlePeriodChange('AM')}

@@ -47,6 +47,16 @@ export default function TeachersPage() {
     }
   }, []);
 
+  const formatTo12Hour = (timeStr: string): string => {
+    if (!timeStr) return '--:--';
+    if (timeStr.includes(' ')) return timeStr;
+    const [hours, minutes] = timeStr.split(':');
+    const h24 = parseInt(hours, 10);
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+    return `${h12.toString().padStart(2, '0')}:${(minutes || '00').padStart(2, '0')} ${period}`;
+  };
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -318,7 +328,7 @@ export default function TeachersPage() {
                                             />
                                             <div>
                                               <p className={`text-sm font-bold ${takenBy ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{slot.label}</p>
-                                              <p className="text-[10px] text-gray-400">{slot.startTime} - {slot.endTime}</p>
+                                              <p className="text-[10px] text-gray-400">{formatTo12Hour(slot.startTime)} - {formatTo12Hour(slot.endTime)}</p>
                                             </div>
                                         </div>
                                         {takenBy && (

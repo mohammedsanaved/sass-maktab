@@ -233,10 +233,10 @@ export default function StudentsPage() {
   const getTimeSlotLabel = (id?: string) => timeSlots.find(t => t.id === id)?.label || 'N/A';
 
 
-  if (loading) {
-      return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>;
-      // return <div className="flex h-96 items-center justify-center"><Image src={"/logo.png"} alt="Loading" width={100} height={100} loading='lazy' /></div>;
-  }
+  // if (loading) {
+  //     return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>;
+  //     // return <div className="flex h-96 items-center justify-center"><Image src={"/logo.png"} alt="Loading" width={100} height={100} loading='lazy' /></div>;
+  // }
 
   return (
     <div className='p-6'>
@@ -344,7 +344,10 @@ export default function StudentsPage() {
       </Card>
 
       {/* Table */}
-      <Card className='p-0 overflow-hidden'>
+      {loading ? (
+        <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>
+      ) : (
+        <Card className='p-0 overflow-hidden'>
         <Table>
           <TableHead>
             <TableRow>
@@ -460,6 +463,7 @@ export default function StudentsPage() {
           </TableBody>
         </Table>
       </Card>
+    )}
 
         {/* Pagination */}
         <div className='flex items-center justify-between px-6 py-4'>
@@ -517,7 +521,7 @@ export default function StudentsPage() {
                         {value: '', label: 'Select Target Session...'}, 
                         ...availableSessions.map(s => ({ 
                             value: s.id, 
-                            label: `${s.classLevel?.name || 'Unknown'} - ${s.timeSlot?.label || 'Unknown'} (${s.teacher?.name || 'No Teacher'})` 
+                            label: `${s.teacher?.name || 'No Teacher'}` 
                         }))
                     ]}
                     value={selectedSessionId}

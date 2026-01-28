@@ -10,10 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-
-interface SidebarProps {
-  isSidebarOpen: boolean;
-}
+import { useSidebar } from '@/context/SidebarContext';
 
 const SidebarItem = ({
   to,
@@ -48,8 +45,9 @@ const SidebarItem = ({
   </Link>
 );
 
-export const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
+export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { isSidebarOpen } = useSidebar();
   // const t = useTranslations('Sidebar');
 
   const handleLogout = () => {

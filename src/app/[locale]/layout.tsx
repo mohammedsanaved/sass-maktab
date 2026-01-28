@@ -4,6 +4,7 @@ import '../globals.css';
 import { NextIntlClientProvider, useMessages } from 'next-intl';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/context/ThemeProvider';
+import { SidebarProvider } from '@/context/SidebarContext';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -31,10 +32,12 @@ export default function RootLayout({
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body className={`${poppins.variable} antialiased`}>
         <ThemeProvider>
-          <NextIntlClientProvider messages={messages}>
-            {children}
-            <Toaster />
-          </NextIntlClientProvider>
+          <SidebarProvider>
+            <NextIntlClientProvider messages={messages}>
+              {children}
+              <Toaster />
+            </NextIntlClientProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
