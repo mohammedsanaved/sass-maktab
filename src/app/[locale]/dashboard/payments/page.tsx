@@ -14,7 +14,13 @@ import {
   Modal,
   Card,
 } from '@/components/ui';
-import { ChevronLeft, ChevronRight, Search, Printer, Loader2 } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Printer,
+  Loader2,
+} from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { Receipt } from '@/components/Receipt';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -22,6 +28,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 // Define interfaces based on API response
 interface StudentPaymentInfo {
   id: string;
+  feeCategory: string;
   rollNumber: string;
   studentName: string;
   fatherName: string;
@@ -69,7 +76,10 @@ const formatMonth = (monthStr: string): string => {
   try {
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
     return monthStr;
   }
@@ -78,11 +88,11 @@ const formatMonth = (monthStr: string): string => {
 // Helper to format date as DD/MM/YYYY
 const formatDate = (dateString: string | Date): string => {
   try {
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return String(dateString);
-      return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return String(dateString);
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
   } catch {
-      return String(dateString);
+    return String(dateString);
   }
 };
 
@@ -112,7 +122,7 @@ const PaymentsPage = () => {
   // Ref for Printing
   const contentRef = React.useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-      contentRef: contentRef,
+    contentRef: contentRef,
   });
 
   const [lastPaymentData, setLastPaymentData] = useState<any>(null);
@@ -121,7 +131,9 @@ const PaymentsPage = () => {
   // Dropdown options
   const [classLevels, setClassLevels] = useState<ClassLevel[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [availableSessions, setAvailableSessions] = useState<ClassSession[]>([]);
+  const [availableSessions, setAvailableSessions] = useState<ClassSession[]>(
+    [],
+  );
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -151,7 +163,7 @@ const PaymentsPage = () => {
       }
       const data = await response.json();
       setStudents(data.data);
-      console.log(data, "dataPayments");
+      console.log(data, 'dataPayments');
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total || 0);
       setTotal(data.pagination.total || 0);
@@ -189,48 +201,57 @@ const PaymentsPage = () => {
   // Generate selectable months (Current Year + 2)
   const getSelectableMonths = () => {
     if (!selectedStudent) return [];
-    
+
     // Start from Max(July 2025, lastPaid + 1, joinDate)
     const arrearsStartDate = new Date(2025, 6, 1);
     const joinDate = new Date(selectedStudent.joinedAt);
-    const lastPaid = selectedStudent.lastFeePaidMonth ? new Date(selectedStudent.lastFeePaidMonth) : null;
-    
-    let current = lastPaid ? new Date(lastPaid.getFullYear(), lastPaid.getMonth() + 1, 1) : 
-                (joinDate > arrearsStartDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : arrearsStartDate);
-    
+    const lastPaid = selectedStudent.lastFeePaidMonth
+      ? new Date(selectedStudent.lastFeePaidMonth)
+      : null;
+
+    let current = lastPaid
+      ? new Date(lastPaid.getFullYear(), lastPaid.getMonth() + 1, 1)
+      : joinDate > arrearsStartDate
+        ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1)
+        : arrearsStartDate;
+
     const endDate = new Date();
     endDate.setFullYear(endDate.getFullYear() + 2);
     endDate.setMonth(11); // Dec of 2 years ahead
 
     const months = [];
     while (current <= endDate) {
-        months.push(new Date(current));
-        current.setMonth(current.getMonth() + 1);
+      months.push(new Date(current));
+      current.setMonth(current.getMonth() + 1);
     }
     return months;
   };
 
   const handlePayFees = (student: StudentPaymentInfo) => {
     setSelectedStudent(student);
-    
+
     // Auto-select pending months (Arrears + Current Month)
     const pendingMonths: string[] = [];
     const arrearsStartDate = new Date(2025, 6, 1);
     const joinDate = new Date(student.joinedAt);
-    const lastPaid = student.lastFeePaidMonth ? new Date(student.lastFeePaidMonth) : null;
-    
-    let current = lastPaid ? new Date(lastPaid.getFullYear(), lastPaid.getMonth() + 1, 1) : 
-                (joinDate > arrearsStartDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : arrearsStartDate);
-    
+    const lastPaid = student.lastFeePaidMonth
+      ? new Date(student.lastFeePaidMonth)
+      : null;
+
+    let current = lastPaid
+      ? new Date(lastPaid.getFullYear(), lastPaid.getMonth() + 1, 1)
+      : joinDate > arrearsStartDate
+        ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1)
+        : arrearsStartDate;
+
     const today = new Date();
     today.setDate(1);
     today.setHours(0, 0, 0, 0);
 
     while (current <= today) {
-        pendingMonths.push(getMonthStr(current));
-        current.setMonth(current.getMonth() + 1);
+      pendingMonths.push(getMonthStr(current));
+      current.setMonth(current.getMonth() + 1);
     }
-
 
     setPaymentMonths(pendingMonths);
     setPaymentAmount((pendingMonths.length * student.monthlyFees).toString());
@@ -239,15 +260,17 @@ const PaymentsPage = () => {
   };
 
   const toggleMonth = (monthStr: string) => {
-    setPaymentMonths(prev => {
-        const newMonths = prev.includes(monthStr) 
-            ? prev.filter(m => m !== monthStr)
-            : [...prev, monthStr].sort();
-        
-        if (selectedStudent) {
-            setPaymentAmount((newMonths.length * selectedStudent.monthlyFees).toString());
-        }
-        return newMonths;
+    setPaymentMonths((prev) => {
+      const newMonths = prev.includes(monthStr)
+        ? prev.filter((m) => m !== monthStr)
+        : [...prev, monthStr].sort();
+
+      if (selectedStudent) {
+        setPaymentAmount(
+          (newMonths.length * selectedStudent.monthlyFees).toString(),
+        );
+      }
+      return newMonths;
     });
   };
 
@@ -272,16 +295,15 @@ const PaymentsPage = () => {
         throw new Error('Payment failed');
       }
 
-
       // Prepare data for receipt
       const paymentResponse = await response.json();
       setLastPaymentData({
-          ...selectedStudent,
-          amount: parseFloat(paymentAmount),
-          months: paymentMonths,
-          receiptNo: paymentResponse.receiptNo,
-          id: paymentResponse.id, // Get the payment ID from response
-          classLevelName: selectedStudent.classSession?.classLevelName || 'N/A', // Ensure classLevelName at root level
+        ...selectedStudent,
+        amount: parseFloat(paymentAmount),
+        months: paymentMonths,
+        receiptNo: paymentResponse.receiptNo,
+        id: paymentResponse.id, // Get the payment ID from response
+        classLevelName: selectedStudent.classSession?.classLevelName || 'N/A', // Ensure classLevelName at root level
       });
 
       setShowPrintButton(true);
@@ -292,13 +314,12 @@ const PaymentsPage = () => {
     }
   };
 
-
   const selectableMonths = getSelectableMonths();
   const monthsByYear: Record<number, Date[]> = {};
-  selectableMonths.forEach(m => {
-      const year = m.getFullYear();
-      if (!monthsByYear[year]) monthsByYear[year] = [];
-      monthsByYear[year].push(m);
+  selectableMonths.forEach((m) => {
+    const year = m.getFullYear();
+    if (!monthsByYear[year]) monthsByYear[year] = [];
+    monthsByYear[year].push(m);
   });
 
   return (
@@ -374,7 +395,9 @@ const PaymentsPage = () => {
 
       {/* Table */}
       {isLoading ? (
-        <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>
+        <div className='flex h-96 items-center justify-center'>
+          <Loader2 className='animate-spin text-primary-500' size={40} />
+        </div>
       ) : error ? (
         <p className='text-red-500'>{error}</p>
       ) : (
@@ -394,45 +417,59 @@ const PaymentsPage = () => {
             </TableHead>
             <TableBody>
               {students.map((student) => {
-                const paymentStatus = student.arrears.months === 0 ? 'PAID' : 'UNPAID';
+                const paymentStatus =
+                  student.arrears.months === 0 ? 'PAID' : 'UNPAID';
+                const freeCategory =
+                  student.feeCategory !== 'ORPHAN' &&
+                  student.feeCategory !== 'SCHOLARSHIP';
                 return (
                   <TableRow key={student.id}>
                     <TableCell>{student.rollNumber}</TableCell>
                     <TableCell>
-                      <Link
-                        href={`/dashboard/payments/${student.id}`} 
-                        className="text-primary-600 hover:text-primary-800 hover:underline font-medium"
-                      >
-                         {student.studentName}{" "}{student.fatherName}
-                      </Link>
+                      {freeCategory ? (
+                        <Link
+                          href={`/dashboard/payments/${student.id}`}
+                          className='text-primary-600 hover:text-primary-800 hover:underline font-medium'
+                        >
+                          {student.studentName} {student.fatherName}
+                        </Link>
+                      ) : (
+                        <TableCell>
+                          {student.studentName} {student.fatherName}
+                        </TableCell>
+                      )}
                     </TableCell>
                     <TableCell>{student.mobile}</TableCell>
                     <TableCell>
-                        {student.arrears.months > 0 ? (
-                            <span className="text-red-600 font-bold">
-                                {student.arrears.months} m (₹{student.arrears.amount})
-                            </span>
-                        ) : (
-                            <span className="text-green-600">No Arrears</span>
-                        )}
+                      {student.arrears.months > 0 ? (
+                        <span className='text-red-600 font-bold'>
+                          {student.arrears.months} m (₹{student.arrears.amount})
+                        </span>
+                      ) : (
+                        <span className='text-green-600'>No Arrears</span>
+                      )}
                     </TableCell>
                     <TableCell>₹{student.monthlyFees}</TableCell>
                     <TableCell>
-                      {student.latestPayment && student.latestPayment.paidMonths.length > 0 ? (
-                        <div className="flex flex-col">
-                          <span className="text-sm text-foreground">
-                            {student.latestPayment.paidMonths.length > 3 ? (
-                                `${formatMonth(student.latestPayment.paidMonths.sort()[0])} - ${formatMonth(student.latestPayment.paidMonths.sort()[student.latestPayment.paidMonths.length - 1])}`
-                            ) : (
-                                student.latestPayment.paidMonths.map(formatMonth).join(', ')
-                            )}
+                      {student.latestPayment &&
+                      student.latestPayment.paidMonths.length > 0 ? (
+                        <div className='flex flex-col'>
+                          <span className='text-sm text-foreground'>
+                            {student.latestPayment.paidMonths.length > 3
+                              ? `${formatMonth(student.latestPayment.paidMonths.sort()[0])} - ${formatMonth(student.latestPayment.paidMonths.sort()[student.latestPayment.paidMonths.length - 1])}`
+                              : student.latestPayment.paidMonths
+                                  .map(formatMonth)
+                                  .join(', ')}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            ₹{student.latestPayment.amount} on {formatDate(student.latestPayment.paymentDate)}
+                          <span className='text-xs text-gray-500'>
+                            ₹{student.latestPayment.amount} on{' '}
+                            {formatDate(student.latestPayment.paymentDate)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400 italic">No payments yet</span>
+                        <span className='text-sm text-gray-400 italic'>
+                          No payments yet
+                        </span>
                       )}
                     </TableCell>
                     {/* <TableCell>
@@ -447,10 +484,16 @@ const PaymentsPage = () => {
                       </span>
                     </TableCell> */}
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button size='sm' className="hover:bg-primary-500 hover:text-white transition-colors duration-300 cursor-pointer" onClick={() => handlePayFees(student)}>
+                      <div className='flex gap-2'>
+                        {freeCategory && (
+                          <Button
+                            size='sm'
+                            className='hover:bg-primary-500 hover:text-white transition-colors duration-300 cursor-pointer'
+                            onClick={() => handlePayFees(student)}
+                          >
                             Pay Fees
-                        </Button>
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -461,82 +504,109 @@ const PaymentsPage = () => {
         </Card>
       )}
 
-      <div className="px-6 py-4 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-          Showing {students.length > 0 ? (page - 1) * 10 + 1 : 0} - {Math.min(page * 10, total)} of {total} students
+      <div className='px-6 py-4 flex items-center justify-between'>
+        <span className='text-sm text-gray-500'>
+          Showing {students.length > 0 ? (page - 1) * 10 + 1 : 0} -{' '}
+          {Math.min(page * 10, total)} of {total} students
         </span>
-            <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-500">
-                    Page {page} of {totalPages}
-                </span>
-                <div className="flex gap-2">
-                    <Button variant="outlined" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-                        <ChevronLeft size={16} />
-                    </Button>
-                    <Button variant="outlined" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-                        <ChevronRight size={16} />
-                    </Button>
-                </div>
-            </div>
+        <div className='flex items-center gap-4'>
+          <span className='text-sm text-gray-500'>
+            Page {page} of {totalPages}
+          </span>
+          <div className='flex gap-2'>
+            <Button
+              variant='outlined'
+              size='sm'
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            <Button
+              variant='outlined'
+              size='sm'
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              <ChevronRight size={16} />
+            </Button>
+          </div>
         </div>
+      </div>
 
       {/* Pay Fees Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
-            setIsModalOpen(false);
-            setShowPrintButton(false);
-            setLastPaymentData(null);
+          setIsModalOpen(false);
+          setShowPrintButton(false);
+          setLastPaymentData(null);
         }}
-        title={showPrintButton ? `Payment Successful` : `Pay Fees for ${selectedStudent?.studentName}`}
+        title={
+          showPrintButton
+            ? `Payment Successful`
+            : `Pay Fees for ${selectedStudent?.studentName}`
+        }
       >
         {showPrintButton ? (
-            <div className="flex flex-col items-center justify-center py-8 space-y-6">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                    <Printer size={32} />
-                </div>
-                <div className="text-center">
-                    <h3 className="text-xl font-bold">Transaction Complete</h3>
-                    <p className="text-gray-500">Fees for {selectedStudent?.studentName} recorded.</p>
-                </div>
-                
-                <div className="flex gap-4">
-                    <Button onClick={() => handlePrint()} color="success">
-                        <Printer size={18} className="mr-2" /> Print Receipt
-                    </Button>
-                    <Button variant="outlined" onClick={() => {
-                        setIsModalOpen(false);
-                        setShowPrintButton(false);
-                    }}>Done</Button>
-                </div>
-
-                {/* Hidden Receipt Component */}
-                <div style={{ display: 'none' }}>
-                    <Receipt ref={contentRef} data={lastPaymentData} />
-                </div>
+          <div className='flex flex-col items-center justify-center py-8 space-y-6'>
+            <div className='w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center'>
+              <Printer size={32} />
             </div>
+            <div className='text-center'>
+              <h3 className='text-xl font-bold'>Transaction Complete</h3>
+              <p className='text-gray-500'>
+                Fees for {selectedStudent?.studentName} recorded.
+              </p>
+            </div>
+
+            <div className='flex gap-4'>
+              <Button onClick={() => handlePrint()} color='success'>
+                <Printer size={18} className='mr-2' /> Print Receipt
+              </Button>
+              <Button
+                variant='outlined'
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setShowPrintButton(false);
+                }}
+              >
+                Done
+              </Button>
+            </div>
+
+            {/* Hidden Receipt Component */}
+            <div style={{ display: 'none' }}>
+              <Receipt ref={contentRef} data={lastPaymentData} />
+            </div>
+          </div>
         ) : (
           <>
             <div className='space-y-6'>
               {selectedStudent && selectedStudent.arrears.months > 0 && (
-                  <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                      <p className="text-red-800 font-bold text-sm">TOTAL ARREARS: {selectedStudent.arrears.months} Months (₹{selectedStudent.arrears.amount})</p>
-                      <p className="text-red-600 text-[10px] uppercase font-bold mt-1">Starting from July 2025 or join date</p>
-                  </div>
+                <div className='bg-red-50 border border-red-200 p-4 rounded-lg'>
+                  <p className='text-red-800 font-bold text-sm'>
+                    TOTAL ARREARS: {selectedStudent.arrears.months} Months (₹
+                    {selectedStudent.arrears.amount})
+                  </p>
+                  <p className='text-red-600 text-[10px] uppercase font-bold mt-1'>
+                    Starting from July 2025 or join date
+                  </p>
+                </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className='grid grid-cols-2 gap-4'>
                 <TextField
-                    label='Amount'
-                    type='number'
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
+                  label='Amount'
+                  type='number'
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
                 />
                 <TextField
-                    label='Remarks'
-                    value={paymentRemarks}
-                    onChange={(e) => setPaymentRemarks(e.target.value)}
-                    placeholder="Optional"
+                  label='Remarks'
+                  value={paymentRemarks}
+                  onChange={(e) => setPaymentRemarks(e.target.value)}
+                  placeholder='Optional'
                 />
               </div>
 
@@ -545,41 +615,54 @@ const PaymentsPage = () => {
                   Select Months (Up to 2 Years Advance)
                 </label>
                 <div className='max-h-72 overflow-y-auto pr-2 space-y-6 custom-scrollbar'>
-                  {Object.keys(monthsByYear).sort().map((year) => (
-                      <div key={year} className="space-y-3">
-                          <h4 className="text-xs font-black text-primary-600 border-b pb-1">{year}</h4>
-                          <div className='grid grid-cols-4 gap-2'>
-                            {monthsByYear[parseInt(year)].map((d) => {
-                                const monthStr = getMonthStr(d);
-                                const isSelected = paymentMonths.includes(monthStr);
-                                return (
-                                    <Button
-                                        key={monthStr}
-                                        variant={isSelected ? 'contained' : 'outlined'}
-                                        size="sm"
-                                        className="text-[10px] py-1 px-0"
-                                        onClick={() => toggleMonth(monthStr)}
-                                    >
-                                        {d.toLocaleString('default', { month: 'short' })}
-                                    </Button>
-                                );
-                            })}
-                          </div>
+                  {Object.keys(monthsByYear)
+                    .sort()
+                    .map((year) => (
+                      <div key={year} className='space-y-3'>
+                        <h4 className='text-xs font-black text-primary-600 border-b pb-1'>
+                          {year}
+                        </h4>
+                        <div className='grid grid-cols-4 gap-2'>
+                          {monthsByYear[parseInt(year)].map((d) => {
+                            const monthStr = getMonthStr(d);
+                            const isSelected = paymentMonths.includes(monthStr);
+                            return (
+                              <Button
+                                key={monthStr}
+                                variant={isSelected ? 'contained' : 'outlined'}
+                                size='sm'
+                                className='text-[10px] py-1 px-0'
+                                onClick={() => toggleMonth(monthStr)}
+                              >
+                                {d.toLocaleString('default', {
+                                  month: 'short',
+                                })}
+                              </Button>
+                            );
+                          })}
+                        </div>
                       </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
             <div className='mt-8 pt-4 border-t flex justify-between items-center'>
               <div>
-                  <p className="text-xs text-gray-400">Selected Months:</p>
-                  <p className="font-bold text-lg text-primary-600">{paymentMonths.length} Months</p>
+                <p className='text-xs text-gray-400'>Selected Months:</p>
+                <p className='font-bold text-lg text-primary-600'>
+                  {paymentMonths.length} Months
+                </p>
               </div>
-              <div className="flex gap-3">
-                <Button variant='outlined' onClick={() => setIsModalOpen(false)}>
-                    Cancel
+              <div className='flex gap-3'>
+                <Button
+                  variant='outlined'
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
                 </Button>
-                <Button onClick={handleSavePayment}>Confirm Payment (₹{paymentAmount})</Button>
+                <Button onClick={handleSavePayment}>
+                  Confirm Payment (₹{paymentAmount})
+                </Button>
               </div>
             </div>
           </>
@@ -587,20 +670,20 @@ const PaymentsPage = () => {
       </Modal>
 
       <style jsx global>{`
-          .custom-scrollbar::-webkit-scrollbar {
-              width: 6px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-track {
-              background: #f1f1f1;
-              border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-              background: #ccc;
-              border-radius: 10px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-              background: #aaa;
-          }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #ccc;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #aaa;
+        }
       `}</style>
     </div>
   );

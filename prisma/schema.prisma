@@ -61,6 +61,13 @@ enum StudentStatus {
   OLD
 }
 
+enum FeeCategory {
+  REGULAR
+  ORPHAN
+  SCHOLARSHIP
+  SPONSORED
+}
+
 // ------------------------------------
 // 2. Core Authentication Models
 // ------------------------------------
@@ -217,6 +224,10 @@ model Student {
   monthlyFees   Float
   donation      Float?
   
+  feeCategory   FeeCategory @default(REGULAR)
+  sponsorName   String?
+  sponsorContact String?
+  
   // Many-to-One: A student has many fee payments
   // Many-to-One: A student has many fee payments
   feePayments FeePayment[]
@@ -224,6 +235,10 @@ model Student {
   // One-to-Many: A student has many enrollments (academic history)
   enrollments StudentEnrollment[]
   
+  // ----- MEETINGS -----
+  meetingAttendance String[] @default(["pending", "pending", "pending"])
+  meetingsLastReset DateTime? @default(now())
+
   // ----- METADATA -----
   remarks       String?
   isActive      Boolean   @default(true)

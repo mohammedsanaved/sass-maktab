@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, Button, TextField, Select, Badge } from '@/components/ui';
 import { ArrowLeft, Save, ClipboardList, Info, Phone, User, Home, ShieldAlert, Loader2 } from 'lucide-react';
-import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory } from '@/types';
+import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory, FeeCategory } from '@/types';
 
 export default function EditStudentPage() {
   const router = useRouter();
@@ -334,6 +334,32 @@ export default function EditStudentPage() {
                 value={formData.monthlyFees || 0} 
                 onChange={e => handleChange('monthlyFees', Number(e.target.value))} 
               />
+              <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Fee Category (فیس کی قسم)</label>
+                  <Select 
+                    options={Object.values(FeeCategory).map(c => ({ value: c, label: c }))}
+                    value={formData.feeCategory}
+                    onChange={e => handleChange('feeCategory', e.target.value)}
+                  />
+              </div>
+
+              {formData.feeCategory === FeeCategory.SPONSORED && (
+                <>
+                  <TextField 
+                    label="Sponsor Name (ک کفیل کا نام)" 
+                    value={formData.sponsorName || ''} 
+                    onChange={e => handleChange('sponsorName', e.target.value)} 
+                    required
+                  />
+                  <TextField 
+                    label="Sponsor Contact (کفیل کا فون)" 
+                    value={formData.sponsorContact || ''} 
+                    onChange={e => handleChange('sponsorContact', e.target.value)} 
+                    required
+                  />
+                </>
+              )}
+
               <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">Study Status</label>
                   <Select 

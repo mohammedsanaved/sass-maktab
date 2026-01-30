@@ -7,7 +7,7 @@ import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { FormikTextField, FormikSelect } from '@/components/FormikFields';
 import { ArrowLeft, Save, ClipboardList, Info, Phone, User, Home } from 'lucide-react';
-import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory } from '@/types';
+import { Student, ClassLevel, TimeSlot, AdmissionStatus, StudyStatus, StudentType, StudentStatus, HafizCategory, FullTimeSubCategory, FeeCategory } from '@/types';
 
 const validationSchema = Yup.object({
   studentName: Yup.string().required('Student name is required'),
@@ -36,6 +36,17 @@ const validationSchema = Yup.object({
   admissionStatus: Yup.string().required('Admission status is required'),
   studyStatus: Yup.string().required('Study status is required'),
   status: Yup.string().required('Status is required'),
+  feeCategory: Yup.string().required('Fee category is required'),
+  sponsorName: Yup.string().when('feeCategory', {
+    is: (val: string) => val === FeeCategory.SPONSORED,
+    then: (schema) => schema.required('Sponsor name is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  sponsorContact: Yup.string().when('feeCategory', {
+    is: (val: string) => val === FeeCategory.SPONSORED,
+    then: (schema) => schema.required('Sponsor contact is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 export default function NewStudentPage() {
@@ -99,6 +110,9 @@ export default function NewStudentPage() {
     admissionStatus: AdmissionStatus.IN_PROGRESS,
     studyStatus: StudyStatus.REGULAR,
     status: StudentStatus.NEW,
+    feeCategory: FeeCategory?.REGULAR,
+    sponsorName: '',
+    sponsorContact: '',
   };
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -346,6 +360,28 @@ export default function NewStudentPage() {
                     type="number" 
                     required
                   />
+
+                  <FormikSelect 
+                    name="feeCategory"
+                    label="Fee Category (فیس کی قسم)"
+                    options={Object.values(FeeCategory).map(c => ({ value: c, label: c }))}
+                    required
+                  />
+
+                  {values.feeCategory === FeeCategory.SPONSORED && (
+                    <>
+                      <FormikTextField 
+                        name="sponsorName"
+                        label="Sponsor Name (ک کفیل کا نام)" 
+                        required
+                      />
+                      <FormikTextField 
+                        name="sponsorContact"
+                        label="Sponsor Contact (کفیل کا فون)" 
+                        required
+                      />
+                    </>
+                  )}
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">

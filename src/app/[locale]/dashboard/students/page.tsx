@@ -232,6 +232,75 @@ export default function StudentsPage() {
   const getClassName = (id?: string) => classLevels.find(c => c.id === id)?.name || 'N/A';
   const getTimeSlotLabel = (id?: string) => timeSlots.find(t => t.id === id)?.label || 'N/A';
 
+  const handleToggleMeeting = async (studentId: string, meetingIdx: number) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const currentAttendance = student.meetingAttendance || ['pending', 'pending', 'pending'];
+    const statusMap: Record<string, string> = {
+      'pending': 'attended',
+      'attended': 'absent',
+      'absent': 'pending'
+    };
+    const nextStatus = statusMap[currentAttendance[meetingIdx]] || 'pending';
+
+    const newAttendance = [...currentAttendance];
+    newAttendance[meetingIdx] = nextStatus;
+
+    // Optimistic UI update
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, meetingAttendance: newAttendance } : s));
+
+    try {
+      const response = await apiFetch(`/api/students/${studentId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ meetingAttendance: newAttendance })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update meeting status');
+      }
+    } catch (error) {
+      console.error(error);
+      // Rollback on error
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, meetingAttendance: currentAttendance } : s));
+      alert('Failed to update meeting status');
+    }
+  };
+
+  const MeetingIndicators = ({ 
+    attendance = ['pending', 'pending', 'pending'], 
+    onToggle 
+  }: { 
+    attendance?: string[], 
+    onToggle: (index: number) => void 
+  }) => {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'attended': return 'bg-green-500 border-green-500';
+        case 'absent': return 'bg-red-500 border-red-500';
+        default: return 'bg-transparent border-primary-500';
+      }
+    };
+
+    const displayAttendance = attendance.length === 0 ? ['pending', 'pending', 'pending'] : attendance;
+
+    return (
+      <div className="flex gap-1.5 justify-center">
+        {displayAttendance.map((status, idx) => (
+          <button
+            key={idx}
+            onClick={(e) => {
+                e.stopPropagation();
+                onToggle(idx);
+            }}
+            className={`w-3.5 h-3.5 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${getStatusColor(status)}`}
+            title={`Meeting ${idx + 1}: ${status.charAt(0).toUpperCase() + status.slice(1)}`}
+          />
+        ))}
+      </div>
+    );
+  };
+
 
   // if (loading) {
   //     return <div className="flex h-96 items-center justify-center"><Loader2 className="animate-spin text-primary-500" size={40} /></div>;
@@ -365,6 +434,7 @@ export default function StudentsPage() {
               <Th>Guardian Info</Th>
               <Th>Class & Section</Th>
               <Th>Status</Th>
+              <Th>Meetings</Th>
               <Th>Actions</Th>
             </TableRow>
           </TableHead>
@@ -395,6 +465,13 @@ export default function StudentsPage() {
                     <span className='text-primary-600 hover:text-primary-800 hover:underline font-medium'>
                       {student.studentName}
                     </span>
+                    {student.feeCategory && student.feeCategory !== 'REGULAR' && (
+                      <div className="mt-1 w-fit scale-75 origin-left">
+                        <Badge color="purple">
+                          {student.feeCategory}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -434,6 +511,12 @@ export default function StudentsPage() {
                   >
                     {student.studyStatus}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <MeetingIndicators 
+                    attendance={student.meetingAttendance} 
+                    onToggle={(idx) => handleToggleMeeting(student.id, idx)} 
+                  />
                 </TableCell>
                 <TableCell>
                   <div className='flex space-x-2'>

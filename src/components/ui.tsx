@@ -352,8 +352,13 @@ export const TableRow: React.FC<
   </tr>
 );
 
-export const Th: React.FC<{ children?: ReactNode }> = ({ children }) => (
-  <th className='px-6 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wide'>
+export const Th: React.FC<
+  { children?: ReactNode; className?: string } & React.ThHTMLAttributes<HTMLTableHeaderCellElement>
+> = ({ children, className = '', ...props }) => (
+  <th
+    className={`px-6 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wide ${className}`}
+    {...props}
+  >
     {children}
   </th>
 );

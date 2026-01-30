@@ -42,7 +42,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // Loop from startCalculationFrom to (but not including) referenceDate
     // This makes the current month's fee NOT an arrear until next month starts.
     let tempDate = new Date(startCalculationFrom);
-    while (tempDate < referenceDate) {
+    const paysFee = student.feeCategory === 'REGULAR' || student.feeCategory === 'SPONSORED';
+    while (tempDate < referenceDate && paysFee) {
         const monthStr = tempDate.toISOString().substring(0, 7);
         if (!allPaidMonths.has(monthStr)) {
             arrearsMonths++;
@@ -82,7 +83,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         emergencyContactName, emergencyContactPhone,
         remarks,
         classId, timeSlotId,
-        status, admissionStatus, studyStatus
+        status, admissionStatus, studyStatus,
+        feeCategory, sponsorName, sponsorContact
     } = body;
 
     const data: any = {};
@@ -99,6 +101,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (fullTimeSubCategory !== undefined) data.fullTimeSubCategory = fullTimeSubCategory;
     if (admissionFee !== undefined) data.admissionFee = parseFloat(admissionFee);
     if (monthlyFees !== undefined) data.monthlyFees = parseFloat(monthlyFees);
+    if (feeCategory !== undefined) data.feeCategory = feeCategory;
+    if (feeCategory === 'SPONSORED') {
+        if (sponsorName !== undefined) data.sponsorName = sponsorName;
+        if (sponsorContact !== undefined) data.sponsorContact = sponsorContact;
+    } else if (feeCategory !== undefined) {
+        data.sponsorName = null;
+        data.sponsorContact = null;
+    }
     if (residence !== undefined) data.residence = residence;
     if (fullPermanentAddress !== undefined) data.fullPermanentAddress = fullPermanentAddress;
     if (parentGuardianOccupation !== undefined) data.parentGuardianOccupation = parentGuardianOccupation;
@@ -122,6 +132,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         }
     }
     if (studyStatus !== undefined) data.studyStatus = studyStatus;
+    if (body.meetingAttendance !== undefined) data.meetingAttendance = body.meetingAttendance;
 
     if (classId && timeSlotId) {
         const session = await prisma.classSession.findFirst({

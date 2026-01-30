@@ -96,6 +96,13 @@ export default function StudentProfilePage() {
                 <Badge color={student.studyStatus === 'REGULAR' ? 'green' : 'yellow'}>
                     {student.studyStatus}
                 </Badge>
+                {student.feeCategory !== 'REGULAR' && (
+                  <span className="ml-2">
+                    <Badge color="purple">
+                      {student.feeCategory}
+                    </Badge>
+                  </span>
+                )}
               </div>
             </div>
             <div className="space-y-1">
@@ -200,6 +207,14 @@ export default function StudentProfilePage() {
                     {student.arrears?.months ? `${student.arrears.months} Months (₹${student.arrears.amount})` : 'Clear'}
                 </span>
               </div>
+              
+              {student.feeCategory === 'SPONSORED' && (
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg space-y-2 border border-purple-100 dark:border-purple-800">
+                  <p className="text-[10px] font-bold text-purple-600 uppercase">Sponsorship Details</p>
+                  <p className="text-sm font-medium">Sponsor: {student.sponsorName || 'N/A'}</p>
+                  <p className="text-xs text-gray-500">Contact: {student.sponsorContact || 'N/A'}</p>
+                </div>
+              )}
               
               <div className="mt-6 flex flex-col gap-2">
                 {student.arrears?.months ? (

@@ -12,6 +12,38 @@ export async function GET(request: Request) {
     const timeSlotId = searchParams.get('timeSlotId');
     const academicYear = searchParams.get('academicYear');
     
+    // Yearly Reset Logic for Meetings
+    // If last reset was more than 365 days ago, reset all students' meeting attendance
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    // Find if any student needs reset (or just check a global setting if we had one)
+    // Here we'll do it per student list fetch for simplicity or better, a batch update if needed.
+    // For performance, we can just check if any student has a lastReset < oneYearAgo
+    const needsResetCount = await prisma.student.count({
+        where: {
+            OR: [
+                { meetingsLastReset: { lt: oneYearAgo } },
+                { meetingsLastReset: null }
+            ]
+        }
+    });
+
+    if (needsResetCount > 0) {
+        await prisma.student.updateMany({
+            where: {
+                OR: [
+                    { meetingsLastReset: { lt: oneYearAgo } },
+                    { meetingsLastReset: null }
+                ]
+            },
+            data: {
+                meetingAttendance: ['pending', 'pending', 'pending'],
+                meetingsLastReset: new Date()
+            }
+        });
+    }
+
     // Pagination parameters
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '15', 10);
@@ -93,7 +125,7 @@ export async function GET(request: Request) {
         let paymentStatus = 'Unpaid'; // Default
 
         // Only calculate for confirmed students with valid fees
-        if (student.admissionStatus === 'COMPLETED' && student.monthlyFees > 0) {
+        if (student.admissionStatus === 'COMPLETED' && student.monthlyFees > 0 && (student.feeCategory === 'REGULAR' || student.feeCategory === 'SPONSORED')) {
             const referenceDate = new Date(); 
             referenceDate.setDate(1);
             referenceDate.setHours(0, 0, 0, 0);
@@ -133,7 +165,7 @@ export async function GET(request: Request) {
             }
         } else if (student.admissionStatus !== 'COMPLETED') {
              paymentStatus = 'N/A'; // Not enrolled
-        } else if (student.monthlyFees === 0) {
+        } else if (student.monthlyFees === 0 || (student.feeCategory !== 'REGULAR' && student.feeCategory !== 'SPONSORED')) {
              paymentStatus = 'Free';
         }
 
@@ -176,7 +208,8 @@ export async function POST(request: Request) {
         parentGuardianOccupation, previousSchool,
         emergencyContactName, emergencyContactPhone,
         remarks,
-        classId, timeSlotId, academicYear
+        classId, timeSlotId, academicYear,
+        feeCategory, sponsorName, sponsorContact
     } = body;
 
     // Validate required fields
@@ -280,6 +313,9 @@ export async function POST(request: Request) {
             fullTimeSubCategory,
             admissionFee: admissionFee ? parseFloat(admissionFee) : undefined,
             monthlyFees: monthlyFees ? parseFloat(monthlyFees) : 0,
+            feeCategory: feeCategory || 'REGULAR',
+            sponsorName: feeCategory === 'SPONSORED' ? sponsorName : undefined,
+            sponsorContact: feeCategory === 'SPONSORED' ? sponsorContact : undefined,
             residence,
             fullPermanentAddress,
             parentGuardianOccupation,

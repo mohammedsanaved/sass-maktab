@@ -31,6 +31,13 @@ export enum FullTimeSubCategory {
   FULL_COURSE = 'FULL_COURSE'
 }
 
+export enum FeeCategory {
+  REGULAR = 'REGULAR',
+  ORPHAN = 'ORPHAN',
+  SCHOLARSHIP = 'SCHOLARSHIP',
+  SPONSORED = 'SPONSORED'
+}
+
 export interface ClassLevel {
   id: string;
   name: string;
@@ -98,7 +105,12 @@ export interface Student {
   // Financial
   admissionFee?: number;
   monthlyFees: number;
+  feeCategory: FeeCategory;
+  sponsorName?: string;
+  sponsorContact?: string;
   lastFeePaidMonth?: string;
+  meetingAttendance?: string[];
+  meetingsLastReset?: string;
   
   // Class Assignment
   classSessionId?: string;
