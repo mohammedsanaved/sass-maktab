@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '../../../../lib/prisma';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody } from '@/lib/server/validation';
+
+const promoteStudentsSchema = z.object({
+  studentIds: z.array(z.string().min(1)).min(1),
+  classId: z.string().min(1),
+  timeSlotId: z.string().min(1),
+  academicYear: z.string().min(1),
+});
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { studentIds, classId, timeSlotId, academicYear } = body;
-
-    if (!studentIds || !Array.isArray(studentIds) || !classId || !timeSlotId || !academicYear) {
-      return NextResponse.json({ error: 'Invalid input. Missing required fields.' }, { status: 400 });
-    }
+    const { studentIds, classId, timeSlotId, academicYear } = await parseBody(
+      request,
+      promoteStudentsSchema
+    );
 
     // 1. Find the target session
     const targetSession = await prisma.classSession.findFirst({
@@ -16,12 +24,9 @@ export async function PUT(request: Request) {
     });
 
     if (!targetSession) {
-      return NextResponse.json(
-        {
-          error:
-            'Target Class Session not found. Please ensure this class is assigned to a teacher in Teacher Settings for the selected time slot.',
-        },
-        { status: 404 }
+      throw new ApiError(
+        404,
+        'Target Class Session not found. Please ensure this class is assigned to a teacher in Teacher Settings for the selected time slot.'
       );
     }
 
@@ -112,10 +117,6 @@ export async function PUT(request: Request) {
       targetSession: targetSession.id
     });
   } catch (error) {
-    console.error('Error promoting students:', error);
-    return NextResponse.json(
-      { error: 'Failed to promote students' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Error promoting students');
   }
 }

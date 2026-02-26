@@ -1,29 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { z } from 'zod';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseParams, parseQuery } from '@/lib/server/validation';
+
+const routeParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+const paymentHistoryQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+});
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Student ID is required' },
-        { status: 400 }
-      );
-    }
+    const { id } = await parseParams(params, routeParamsSchema);
+    const { page, limit, search } = parseQuery(request, paymentHistoryQuerySchema);
 
     // Pagination & Search Params
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
     const skip = (page - 1) * limit;
 
     // Build Where Clause
-    const where: any = { studentId: id };
+    const where: Parameters<typeof prisma.feePayment.findMany>[0]['where'] = {
+      studentId: id,
+    };
 
     if (search) {
         where.receiptNo = { contains: search, mode: 'insensitive' };
@@ -49,7 +54,7 @@ export async function GET(
     });
 
     if (!student) {
-        return NextResponse.json({ error: "Student not found" }, { status: 404 });
+        throw new ApiError(404, 'Student not found');
     }
 
     // Count Total
@@ -78,10 +83,6 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error fetching payment history:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch payment history' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Error fetching payment history');
   }
 }

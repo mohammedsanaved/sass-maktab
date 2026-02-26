@@ -1,39 +1,70 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../../lib/prisma';
+import { z } from 'zod';
+import {
+  handleApiError,
+  observeApiDurationMs,
+  recordApiSuccess,
+} from '@/lib/server/api-utils';
+import { parseQuery } from '@/lib/server/validation';
+import { assertRateLimit } from '@/lib/rate-limit';
+import { generateStudentsCsv } from '@/modules/students-export/students-export.service';
+import { enqueueJob } from '@/lib/queue/queue';
+import { ensureWorkersRegistered } from '@/workers/register-workers';
+import { STUDENTS_EXPORT_JOB_TYPE } from '@/workers/job-types';
+
+const exportQuerySchema = z.object({
+  mode: z.enum(['sync', 'async']).optional(),
+});
 
 export async function GET(request: Request) {
+  const startedAt = Date.now();
   try {
-      // Middleware ensures only Auth users access this
-      const students = await prisma.student.findMany({
-          include: {
-              classSession: {
-                  include: {
-                      classLevel: true,
-                      timeSlot: true
-                  }
-              }
+      const { mode } = parseQuery(request, exportQuerySchema);
+      const normalizedMode = mode ?? 'sync';
+
+      if (normalizedMode === 'async') {
+        await assertRateLimit(request, {
+          keyPrefix: 'students_export_async',
+          limit: 5,
+          windowSeconds: 60,
+        });
+
+        await ensureWorkersRegistered();
+        const job = await enqueueJob(STUDENTS_EXPORT_JOB_TYPE, {
+          requestedAt: new Date().toISOString(),
+        });
+
+        recordApiSuccess(200, { route: '/api/students/export', method: 'GET', mode: 'async' });
+        observeApiDurationMs(Date.now() - startedAt, {
+          route: '/api/students/export',
+          method: 'GET',
+          mode: 'async',
+        });
+        return NextResponse.json({
+          success: true,
+          data: {
+            jobId: job.id,
+            status: job.status,
+            statusUrl: `/api/jobs/${job.id}`,
+            downloadUrl: `/api/jobs/${job.id}?download=1`,
           },
-          orderBy: { studentName: 'asc' }
+        });
+      }
+
+      await assertRateLimit(request, {
+        keyPrefix: 'students_export_sync',
+        limit: 10,
+        windowSeconds: 60,
       });
 
-      // Simple CSV generation
-      const headers = ['ID', 'Name', 'Father Name', 'Gender', 'Mobile', 'Class', 'Time Slot', 'Fees'];
-      const rows = students.map(s => [
-          s.id,
-          s.studentName,
-          s.fatherName,
-          (s as any).gender || '',
-          s.mobile,
-          s.classSession?.classLevel?.name || 'Unassigned',
-          s.classSession?.timeSlot?.label || '',
-          s.monthlyFees
-      ]);
+      const csvContent = await generateStudentsCsv();
 
-      const csvContent = [
-          headers.join(','),
-          ...rows.map(r => r.map(c => `"${c}"`).join(','))
-      ].join('\n');
-
+      recordApiSuccess(200, { route: '/api/students/export', method: 'GET', mode: 'sync' });
+      observeApiDurationMs(Date.now() - startedAt, {
+        route: '/api/students/export',
+        method: 'GET',
+        mode: 'sync',
+      });
       return new NextResponse(csvContent, {
           headers: {
               'Content-Type': 'text/csv',
@@ -42,7 +73,10 @@ export async function GET(request: Request) {
       });
 
   } catch (error) {
-    console.error('Error exporting students:', error);
-    return NextResponse.json({ error: 'Failed to export students' }, { status: 500 });
+    observeApiDurationMs(Date.now() - startedAt, {
+      route: '/api/students/export',
+      method: 'GET',
+    });
+    return handleApiError(error, 'Error exporting students');
   }
 }

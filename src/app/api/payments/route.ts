@@ -1,29 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import * as yup from 'yup';
 import { calculateStudentArrears } from '@/lib/utils/fee-utils';
 import { normalizeToMonthStart } from '@/lib/utils/date-utils';
+import { z } from 'zod';
+import { handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseQuery } from '@/lib/server/validation';
 
 // const prisma = new PrismaClient();
 
+const paymentsListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  classId: z.string().optional(),
+  timeSlotId: z.string().optional(),
+  classSessionId: z.string().optional(),
+  status: z.enum(['PAID', 'UNPAID', 'ALL']).optional(),
+});
+
+const paymentSchema = z.object({
+  studentId: z.string().min(1),
+  amount: z.coerce.number().positive(),
+  months: z.array(z.string().min(1)).min(1),
+  remarks: z.string().optional(),
+});
+
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { page, limit, search, classId, timeSlotId, classSessionId, status } =
+      parseQuery(request, paymentsListQuerySchema);
 
     // 1. Pagination Params
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
     // 2. Filter Params
-    const search = searchParams.get('search') || '';
-    const classId = searchParams.get('classId');
-    const timeSlotId = searchParams.get('timeSlotId');
-    const classSessionId = searchParams.get('classSessionId');
-    const status = searchParams.get('status'); // 'PAID', 'UNPAID', 'ALL' || null
 
     // 3. Build Where Query
-    const where: Record<string, unknown> = {
+    const where: Parameters<typeof prisma.student.findMany>[0]['where'] = {
       studyStatus: { in: ['REGULAR', 'IRREGULAR'] },
     };
     where.admissionStatus = 'COMPLETED';
@@ -149,36 +162,16 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching payments list:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch data' },
-      { status: 500 },
-    );
+    return handleApiError(error, 'Error fetching payments list');
   }
 }
 
-const paymentSchema = yup.object({
-  studentId: yup.string().required(),
-  amount: yup.number().positive().required(),
-  months: yup.array().of(yup.string()).min(1).required(),
-  remarks: yup.string().optional(),
-});
-
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    
-    // Validate request body
-    try {
-      await paymentSchema.validate(body);
-    } catch (validationError: any) {
-      return NextResponse.json(
-        { error: validationError.message },
-        { status: 400 }
-      );
-    }
-
-    const { studentId, amount, months, remarks } = body;
+    const { studentId, amount, months, remarks } = await parseBody(
+      request,
+      paymentSchema
+    );
 
     let maxDate = new Date(0);
     for (const m of months) {
@@ -223,7 +216,7 @@ export async function POST(request: NextRequest) {
       const payment = await tx.feePayment.create({
         data: {
           studentId,
-          amount: parseFloat(amount),
+          amount,
           paymentDate: new Date(),
           paymentType: 'MONTHLY',
           paidMonths: months, // Use the months array from the body
@@ -252,10 +245,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Payment processing error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process payment' },
-      { status: 500 },
-    );
+    return handleApiError(error, 'Payment processing error');
   }
 }

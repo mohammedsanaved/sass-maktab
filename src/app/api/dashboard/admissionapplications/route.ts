@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { AdmissionStatus } from '@/types';
+import { z } from 'zod';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseQuery } from '@/lib/server/validation';
+
+const admissionApplicationsQuerySchema = z.object({
+  status: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+const updateAdmissionStatusSchema = z.object({
+  studentId: z.string().min(1),
+  status: z.nativeEnum(AdmissionStatus),
+});
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const { status, page, limit } = parseQuery(
+      request,
+      admissionApplicationsQuerySchema
+    );
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Parameters<typeof prisma.student.findMany>[0]['where'] = {};
     
     if (status && status !== 'ALL') {
       // Validate if status is a valid AdmissionStatus
@@ -56,23 +70,16 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error fetching admission applications:', error);
-    return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 });
+    return handleApiError(error, 'Error fetching admission applications');
   }
 }
 
 export async function PUT(request: Request) {
     try {
-        const body = await request.json();
-        const { studentId, status } = body;
-
-        if (!studentId || !status) {
-            return NextResponse.json({ error: 'Student ID and Status are required' }, { status: 400 });
-        }
-
-        if (!Object.values(AdmissionStatus).includes(status)) {
-            return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-        }
+        const { studentId, status } = await parseBody(
+          request,
+          updateAdmissionStatusSchema
+        );
 
         const updatedStudent = await prisma.student.update({
             where: { id: studentId },
@@ -84,12 +91,13 @@ export async function PUT(request: Request) {
                 // For now just update admissionStatus.
             }
         });
-        console.log(updatedStudent, "---------------UPDATED");
 
         return NextResponse.json(updatedStudent);
 
     } catch (error) {
-        console.error('Error updating admission status:', error);
-        return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
+        if (error instanceof ApiError) {
+          return handleApiError(error, 'Error updating admission status');
+        }
+        return handleApiError(error, 'Error updating admission status');
     }
 }

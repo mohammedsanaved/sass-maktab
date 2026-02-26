@@ -1,18 +1,68 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
 import { calculateStudentArrears } from '@/lib/utils/fee-utils';
 import { AdmissionStatus } from '@/types';
-import { ClientPageRoot } from 'next/dist/client/components/client-page';
+import { z } from 'zod';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseQuery } from '@/lib/server/validation';
+
+const studentsListQuerySchema = z.object({
+  status: z.string().optional(),
+  studyStatus: z.string().optional(),
+  classId: z.string().optional(),
+  timeSlotId: z.string().optional(),
+  academicYear: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(15),
+  search: z.string().optional(),
+  q: z.string().optional(),
+});
+
+const createStudentSchema = z.object({
+  studentName: z.string().trim().min(1),
+  fatherName: z.string().trim().min(1),
+  gender: z.string().optional(),
+  mobile: z.string().trim().min(1),
+  dateOfBirth: z.union([z.string(), z.date()]),
+  age: z.union([z.string(), z.number()]).optional(),
+  formNo: z.string().optional(),
+  grNumber: z.string().optional(),
+  type: z.string().optional(),
+  hafizCategory: z.string().optional(),
+  fullTimeSubCategory: z.string().optional(),
+  admissionFee: z.union([z.string(), z.number()]).optional(),
+  monthlyFees: z.union([z.string(), z.number()]).optional(),
+  status: z.string().optional(),
+  admissionStatus: z.string().optional(),
+  studyStatus: z.string().optional(),
+  residence: z.string().optional(),
+  fullPermanentAddress: z.string().optional(),
+  parentGuardianOccupation: z.string().optional(),
+  previousSchool: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  remarks: z.string().optional(),
+  classId: z.string().optional(),
+  timeSlotId: z.string().optional(),
+  academicYear: z.string().optional(),
+  feeCategory: z.string().optional(),
+  sponsorName: z.string().optional(),
+  sponsorContact: z.string().optional(),
+});
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const studyStatus = searchParams.get('studyStatus');
-    const classId = searchParams.get('classId');
-    const timeSlotId = searchParams.get('timeSlotId');
-    const academicYear = searchParams.get('academicYear');
+    const {
+      status,
+      studyStatus,
+      classId,
+      timeSlotId,
+      academicYear,
+      page,
+      limit,
+      search,
+      q,
+    } = parseQuery(request, studentsListQuerySchema);
     
     // Yearly Reset Logic for Meetings
     // If last reset was more than 365 days ago, reset all students' meeting attendance
@@ -47,14 +97,12 @@ export async function GET(request: Request) {
     }
 
     // Pagination parameters
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '15', 10);
     const skip = (page - 1) * limit;
     
     // Search parameter
-    const search = searchParams.get('search') || searchParams.get('q') || '';
+    const resolvedSearch = search || q || '';
 
-    const where: any = {
+    const where: Parameters<typeof prisma.student.findMany>[0]['where'] = {
         admissionStatus: { in: ['COMPLETED', 'IN_PROGRESS'] },
     };
 
@@ -79,11 +127,11 @@ export async function GET(request: Request) {
     }
     
     // Add search filter
-    if (search) {
+    if (resolvedSearch) {
       where.OR = [
-        { studentName: { contains: search, mode: 'insensitive' } },
-        { rollNumber: { contains: search, mode: 'insensitive' } },
-        { grNumber: { contains: search, mode: 'insensitive' } }
+        { studentName: { contains: resolvedSearch, mode: 'insensitive' } },
+        { rollNumber: { contains: resolvedSearch, mode: 'insensitive' } },
+        { grNumber: { contains: resolvedSearch, mode: 'insensitive' } }
       ];
     }
 
@@ -120,7 +168,6 @@ export async function GET(request: Request) {
     });
 
     // Dynamic Fee Calculation
-    const currentDate = new Date();
     const studentsWithFees = students.map((student) => {
         let totalDues = 0;
         let unpaidMonthsCount = 0;
@@ -165,14 +212,13 @@ export async function GET(request: Request) {
         }
     });
   } catch (error) {
-    console.error('Error fetching students:', error);
-    return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
+    return handleApiError(error, 'Error fetching students');
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await parseBody(request, createStudentSchema);
     const { 
         studentName, fatherName, gender, mobile, dateOfBirth, age,
         formNo, grNumber, type, 
@@ -186,11 +232,6 @@ export async function POST(request: Request) {
         classId, timeSlotId, academicYear,
         feeCategory, sponsorName, sponsorContact
     } = body;
-
-    // Validate required fields
-    if (!studentName || !fatherName || !mobile || !dateOfBirth) {
-         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
 
 
     // Implement Roll Number Generation logic: SerialNumber-MMYYYY (e.g., 001-12-2025)
@@ -231,7 +272,7 @@ export async function POST(request: Request) {
     const generatedRollNumber = `${nextRollSerial}${suffix}`;
 
     // 5. Robust ID Generation for FormNo and GrNo (Inside Transaction)
-    const newStudent = await prisma.$transaction(async (tx: any) => {
+    const newStudent = await prisma.$transaction(async (tx) => {
         
         let finalFormNo = formNo;
         let finalGrNumber = grNumber;
@@ -273,21 +314,22 @@ export async function POST(request: Request) {
         }
 
         // Prepare data
-        const data: any = {
+        type StudentCreateData = Parameters<typeof tx.student.create>[0]['data'];
+        const data: StudentCreateData = {
             studentName,
             fatherName,
             gender,
             mobile,
             dateOfBirth: new Date(dateOfBirth),
-            age: age ? parseInt(age) : undefined,
+            age: age ? Number(age) : undefined,
             grNumber: finalGrNumber,
             formNo: finalFormNo,
             rollNumber: generatedRollNumber,
             type: type || 'NAZERA',
             hafizCategory, 
             fullTimeSubCategory,
-            admissionFee: admissionFee ? parseFloat(admissionFee) : undefined,
-            monthlyFees: monthlyFees ? parseFloat(monthlyFees) : 0,
+            admissionFee: admissionFee ? Number(admissionFee) : undefined,
+            monthlyFees: monthlyFees ? Number(monthlyFees) : 0,
             feeCategory: feeCategory || 'REGULAR',
             sponsorName: feeCategory === 'SPONSORED' ? sponsorName : undefined,
             sponsorContact: feeCategory === 'SPONSORED' ? sponsorContact : undefined,
@@ -312,7 +354,10 @@ export async function POST(request: Request) {
             if (session) {
                 data.classSessionId = session.id;
             } else {
-                throw new Error('CLASS_SESSION_NOT_FOUND');
+                throw new ApiError(
+                  400,
+                  'Class Session (Class + Time) not found. Please ensure a teacher is assigned to this slot.'
+                );
             }
         }
 
@@ -334,20 +379,9 @@ export async function POST(request: Request) {
         return student;
     });
 
-    console.log('-------------New Student:', newStudent);
     return NextResponse.json(newStudent, { status: 201 });
 
-  } catch (error: any) {
-    console.error('Error creating student:', error);
-    if (error.message === 'CLASS_SESSION_NOT_FOUND') {
-        return NextResponse.json(
-            { error: 'Class Session (Class + Time) not found. Please ensure a teacher is assigned to this slot.' }, 
-            { status: 400 }
-        );
-    }
-    if (error.code === 'P2002') {
-         return NextResponse.json({ error: 'Duplicate Form No, GR No, or Roll Number. Please try again.' }, { status: 409 });
-    }
-    return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, 'Error creating student');
   }
 }

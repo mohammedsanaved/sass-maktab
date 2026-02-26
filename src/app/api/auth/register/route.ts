@@ -1,90 +1,70 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { hashPassword } from '@/lib/auth/password';
+import { headers } from 'next/headers';
+import { z } from 'zod';
+import {
+  ApiError,
+  handleApiError,
+} from '@/lib/server/api-utils';
+import { registerUser } from '@/modules/auth/auth.service';
+import { parseBody } from '@/lib/server/validation';
+import { assertRateLimit } from '@/lib/rate-limit';
+
+const registerSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    role: z.enum(['ADMIN', 'TEACHER']),
+    name: z.string().min(1),
+    phone: z.string().min(1).optional(),
+    address: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.role === 'TEACHER') {
+      if (!value.phone) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['phone'],
+          message: 'Phone is required for teachers',
+        });
+      }
+      if (!value.address) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['address'],
+          message: 'Address is required for teachers',
+        });
+      }
+    }
+  });
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, password, role, name, phone, address } = body;
-    console.log('Registration request body:', body);
+    await assertRateLimit(request, {
+      keyPrefix: 'auth_register',
+      limit: 20,
+      windowSeconds: 60,
+    });
 
-    if (!email || !password || !role || !name) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    const headersList = await headers();
+    const userRole = headersList.get('x-user-role');
+
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Only admin users can register new users');
     }
 
-    const hashedPassword = await hashPassword(password);
+    const payload = await parseBody(request, registerSchema);
 
-    if (role === 'ADMIN') {
-      const existingAdmin = await prisma.admin.findUnique({
-        where: { email },
-      });
+    const result = await registerUser({
+      email: payload.email,
+      password: payload.password,
+      role: payload.role,
+      name: payload.name,
+      phone: payload.phone,
+      address: payload.address,
+    });
 
-      if (existingAdmin) {
-        return NextResponse.json(
-          { error: 'Admin with this email already exists' },
-          { status: 409 }
-        );
-      }
-
-      const newAdmin = await prisma.admin.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          role: 'ADMIN',
-        },
-      });
-      console.log('New admin created:', newAdmin);
-
-      return NextResponse.json(
-        { message: 'Admin registered successfully', userId: newAdmin.id },
-        { status: 201 }
-      );
-    } else if (role === 'TEACHER') {
-      if (!phone || !address) {
-        return NextResponse.json(
-          { error: 'Phone and address are required for teachers' },
-          { status: 400 }
-        );
-      }
-
-      const existingTeacher = await prisma.teacher.findUnique({
-        where: { email },
-      });
-
-      if (existingTeacher) {
-        return NextResponse.json(
-          { error: 'Teacher with this email already exists' },
-          { status: 409 }
-        );
-      }
-
-      const newTeacher = await prisma.teacher.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          phone,
-          address,
-          role: 'TEACHER',
-        },
-      });
-
-      return NextResponse.json(
-        { message: 'Teacher registered successfully', userId: newTeacher.id },
-        { status: 201 }
-      );
-    } else {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-    }
-  } catch (error: any) {
-    console.error('Registration error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json(result, { status: 201 });
+  } catch (error) {
+    return handleApiError(error, 'Registration error');
   }
 }

@@ -1,45 +1,56 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '../../../../../lib/prisma';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseParams } from '@/lib/server/validation';
+
+const routeParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+const updateClassSchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+});
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { id } = await parseParams(params, routeParamsSchema);
     const classLevel = await prisma.classLevel.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     if (!classLevel) {
-      return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+      throw new ApiError(404, 'Class not found');
     }
     return NextResponse.json(classLevel);
   } catch (error) {
-    console.error('Error fetching class:', error);
-    return NextResponse.json({ error: 'Failed to fetch class' }, { status: 500 });
+    return handleApiError(error, 'Error fetching class');
   }
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const body = await request.json();
-    const { name, description } = body;
+    const { id } = await parseParams(params, routeParamsSchema);
+    const { name, description } = await parseBody(request, updateClassSchema);
 
     const updatedClass = await prisma.classLevel.update({
-      where: { id: params.id },
+      where: { id },
       data: { name, description },
     });
     return NextResponse.json(updatedClass);
   } catch (error) {
-    console.error('Error updating class:', error);
-    return NextResponse.json({ error: 'Failed to update class' }, { status: 500 });
+    return handleApiError(error, 'Error updating class');
   }
 }
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
+    const { id } = await parseParams(params, routeParamsSchema);
     await prisma.classLevel.delete({
-      where: { id: params.id },
+      where: { id },
     });
     return NextResponse.json({ message: 'Class deleted successfully' });
   } catch (error) {
-    console.error('Error deleting class:', error);
-    return NextResponse.json({ error: 'Failed to delete class' }, { status: 500 });
+    return handleApiError(error, 'Error deleting class');
   }
 }

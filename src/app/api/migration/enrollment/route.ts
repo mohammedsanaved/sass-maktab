@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
+import { z } from 'zod';
+import { handleApiError } from '@/lib/server/api-utils';
+import { parseQuery } from '@/lib/server/validation';
+
+const migrationEnrollmentQuerySchema = z.object({
+  academicYear: z.string().optional(),
+});
 
 export async function GET(request: Request) {
   try {
+    const { academicYear } = parseQuery(request, migrationEnrollmentQuerySchema);
     // 1. Fetch all students who are assigned to a classSession but have no enrollments for the current year
     const students = await prisma.student.findMany({
       where: {
@@ -14,7 +22,7 @@ export async function GET(request: Request) {
       }
     });
 
-    const currentYear = "2024-2025";
+    const currentYear = academicYear ?? '2024-2025';
     const migratedStudents = [];
     const skippedStudents = [];
 
@@ -46,7 +54,6 @@ export async function GET(request: Request) {
       migratedIds: migratedStudents,
     });
   } catch (error) {
-    console.error('Migration error:', error);
-    return NextResponse.json({ error: 'Migration failed', details: String(error) }, { status: 500 });
+    return handleApiError(error, 'Migration error');
   }
 }

@@ -3,20 +3,28 @@ import prisma from '@/lib/prisma';
 import { comparePassword } from '@/lib/auth/password';
 import { signAccessToken, signRefreshToken } from '@/lib/auth/token';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody } from '@/lib/server/validation';
+import { assertRateLimit } from '@/lib/rate-limit';
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    await assertRateLimit(request, {
+      keyPrefix: 'auth_login',
+      limit: 10,
+      windowSeconds: 60,
+    });
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
+    const { email, password } = await parseBody(request, loginSchema);
 
-    let user: any = null;
+    type LoginUser = { id: string; email: string; password: string };
+    let user: LoginUser | null = null;
     let role = '';
 
     // Check Admin table
@@ -34,18 +42,12 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+      throw new ApiError(401, 'Invalid credentials');
     }
 
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+      throw new ApiError(401, 'Invalid credentials');
     }
 
     const accessToken = await signAccessToken({
@@ -70,11 +72,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ accessToken });
-  } catch (error: any) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'Login error');
   }
 }

@@ -1,9 +1,48 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '../../../../lib/prisma';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseParams } from '@/lib/server/validation';
+
+const routeParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+const updateStudentSchema = z.object({
+  studentName: z.string().optional(),
+  fatherName: z.string().optional(),
+  gender: z.string().optional(),
+  mobile: z.string().optional(),
+  dateOfBirth: z.union([z.string(), z.date()]).optional(),
+  age: z.union([z.string(), z.number()]).optional(),
+  grNumber: z.string().optional(),
+  rollNumber: z.string().optional(),
+  type: z.string().optional(),
+  hafizCategory: z.string().optional(),
+  fullTimeSubCategory: z.string().optional(),
+  admissionFee: z.union([z.string(), z.number()]).optional(),
+  monthlyFees: z.union([z.string(), z.number()]).optional(),
+  residence: z.string().optional(),
+  fullPermanentAddress: z.string().optional(),
+  parentGuardianOccupation: z.string().optional(),
+  previousSchool: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  remarks: z.string().optional(),
+  classId: z.string().optional(),
+  timeSlotId: z.string().optional(),
+  status: z.string().optional(),
+  admissionStatus: z.string().optional(),
+  studyStatus: z.string().optional(),
+  feeCategory: z.string().optional(),
+  sponsorName: z.string().optional(),
+  sponsorContact: z.string().optional(),
+  meetingAttendance: z.array(z.string()).optional(),
+});
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
   try {
+    const { id } = await parseParams(params, routeParamsSchema);
     const student = await prisma.student.findUnique({
       where: { id },
       include: {
@@ -17,7 +56,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     });
 
     if (!student) {
-        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+        throw new ApiError(404, 'Student not found');
     }
 
     // Arrears Calculation Logic
@@ -33,7 +72,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     
     // Collect all paid months across all transactions
     const allPaidMonths = new Set<string>();
-    student.feePayments.forEach((p: any) => {
+    student.feePayments.forEach((p) => {
         if (p.paidMonths) {
             p.paidMonths.forEach((m: string) => allPaidMonths.add(m));
         }
@@ -41,7 +80,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     // Loop from startCalculationFrom to (but not including) referenceDate
     // This makes the current month's fee NOT an arrear until next month starts.
-    let tempDate = new Date(startCalculationFrom);
+    const tempDate = new Date(startCalculationFrom);
     const paysFee = student.feeCategory === 'REGULAR' || student.feeCategory === 'SPONSORED';
     while (tempDate < referenceDate && paysFee) {
         const monthStr = tempDate.toISOString().substring(0, 7);
@@ -54,7 +93,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const studentWithArrears = {
         ...student,
-        previousSchool: (student as any).previousTraining, // Map previousTraining to previousSchool for frontend consistency
+        previousSchool: student.previousTraining, // Map previousTraining to previousSchool for frontend consistency
         arrears: {
             months: arrearsMonths,
             amount: arrearsAmount
@@ -63,15 +102,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(studentWithArrears);
   } catch (error) {
-    console.error('Error fetching student:', error);
-    return NextResponse.json({ error: 'Failed to fetch student' }, { status: 500 });
+    return handleApiError(error, 'Error fetching student');
   }
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
   try {
-    const body = await request.json();
+    const { id } = await parseParams(params, routeParamsSchema);
+    const body = await parseBody(request, updateStudentSchema);
     // Allow updating almost all fields
     const { 
         studentName, fatherName, gender, mobile, dateOfBirth, age,
@@ -87,20 +125,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         feeCategory, sponsorName, sponsorContact
     } = body;
 
-    const data: any = {};
+    type StudentUpdateData = Parameters<typeof prisma.student.update>[0]['data'];
+    const data: StudentUpdateData = {};
     if (studentName !== undefined) data.studentName = studentName;
     if (fatherName !== undefined) data.fatherName = fatherName;
     if (gender !== undefined) data.gender = gender;
     if (mobile !== undefined) data.mobile = mobile;
     if (dateOfBirth !== undefined) data.dateOfBirth = new Date(dateOfBirth);
-    if (age !== undefined) data.age = age ? parseInt(age) : undefined;
+    if (age !== undefined) data.age = age ? Number(age) : undefined;
     if (grNumber !== undefined) data.grNumber = grNumber;
     if (rollNumber !== undefined) data.rollNumber = rollNumber;
     if (type !== undefined) data.type = type;
     if (hafizCategory !== undefined) data.hafizCategory = hafizCategory;
     if (fullTimeSubCategory !== undefined) data.fullTimeSubCategory = fullTimeSubCategory;
-    if (admissionFee !== undefined) data.admissionFee = parseFloat(admissionFee);
-    if (monthlyFees !== undefined) data.monthlyFees = parseFloat(monthlyFees);
+    if (admissionFee !== undefined) data.admissionFee = Number(admissionFee);
+    if (monthlyFees !== undefined) data.monthlyFees = Number(monthlyFees);
     if (feeCategory !== undefined) data.feeCategory = feeCategory;
     if (feeCategory === 'SPONSORED') {
         if (sponsorName !== undefined) data.sponsorName = sponsorName;
@@ -170,7 +209,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json(updatedStudent);
 
   } catch (error) {
-    console.error('Error updating student:', error);
-    return NextResponse.json({ error: 'Failed to update student' }, { status: 500 });
+    return handleApiError(error, 'Error updating student');
   }
 }

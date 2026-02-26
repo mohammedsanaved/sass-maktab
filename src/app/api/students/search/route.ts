@@ -1,22 +1,27 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import prisma from '../../../../lib/prisma';
-import { Prisma } from '@prisma/client';
+import { handleApiError } from '@/lib/server/api-utils';
+import { parseQuery } from '@/lib/server/validation';
+
+const searchStudentsQuerySchema = z.object({
+  q: z.string().trim().optional(),
+});
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    const { q } = parseQuery(request, searchStudentsQuerySchema);
 
-    if (!query) {
+    if (!q) {
         return NextResponse.json([]);
     }
 
     const students = await prisma.student.findMany({
       where: {
         OR: [
-            { studentName: { contains: query, mode: 'insensitive' } },
-            { rollNumber: { contains: query, mode: 'insensitive' } },
-            { grNumber: { contains: query, mode: 'insensitive' } } // Gr No from UI
+            { studentName: { contains: q, mode: 'insensitive' } },
+            { rollNumber: { contains: q, mode: 'insensitive' } },
+            { grNumber: { contains: q, mode: 'insensitive' } } // Gr No from UI
         ]
       },
       include: {
@@ -31,7 +36,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(students);
   } catch (error) {
-    console.error('Error searching students:', error);
-    return NextResponse.json({ error: 'Failed to search students' }, { status: 500 });
+    return handleApiError(error, 'Error searching students');
   }
 }

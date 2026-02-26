@@ -11,8 +11,8 @@ import Image from 'next/image';
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@salah.com');
-  const [password, setPassword] = useState('admin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -35,7 +35,7 @@ export default function Login() {
         toast.error('Login failed: No access token received.');
         throw new Error('Login failed: No access token received.');
       }
-    } catch (error) {
+    } catch {
       toast.error('Invalid credentials! Please try again.');
     } finally {
       setIsLoading(false);
@@ -142,20 +142,6 @@ export default function Login() {
                   Sign In
                 </Button>
               </form>
-
-              <div className='mt-10 pt-8 border-t border-gray-100 dark:border-gray-800'>
-                <p className='text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4'>
-                  Quick Test Credentials
-                </p>
-                <div className='flex flex-wrap gap-2 text-xs'>
-                  <span className='px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400 font-mono'>
-                    Email: admin@salah.com
-                  </span>
-                  <span className='px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400 font-mono'>
-                    Pass: admin
-                  </span>
-                </div>
-              </div>
             </div>
           </Card>
         </div>

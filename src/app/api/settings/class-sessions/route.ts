@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
+import { handleApiError } from '@/lib/server/api-utils';
 
 export async function GET() {
   try {
@@ -19,7 +20,6 @@ export async function GET() {
     
     return NextResponse.json(sessions);
   } catch (error) {
-    console.error('Error fetching class sessions:', error);
-    return NextResponse.json({ error: 'Failed to fetch class sessions' }, { status: 500 });
+    return handleApiError(error, 'Error fetching class sessions');
   }
 }

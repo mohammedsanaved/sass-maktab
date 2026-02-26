@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { handleApiError } from '@/lib/server/api-utils';
 
 export async function GET() {
   try {
@@ -20,10 +21,6 @@ export async function GET() {
 
     return NextResponse.json(formattedYears);
   } catch (error) {
-    console.error('Error fetching academic years:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch academic years' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Error fetching academic years');
   }
 }

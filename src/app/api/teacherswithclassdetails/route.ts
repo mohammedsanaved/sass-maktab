@@ -1,15 +1,30 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
-// import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseBody, parseQuery } from '@/lib/server/validation';
+
+const teachersWithDetailsQuerySchema = z.object({
+  search: z.string().optional(),
+  classId: z.string().optional(),
+  timeSlotId: z.string().optional(),
+});
+
+const updateTeacherAssignmentsSchema = z.object({
+  teacherId: z.string().min(1),
+  classId: z.string().min(1),
+  timeSlotIds: z.array(z.string().min(1)),
+  sectionName: z.string().optional(),
+});
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const classId = searchParams.get('classId');
-    const timeSlotId = searchParams.get('timeSlotId');
+    const { search, classId, timeSlotId } = parseQuery(
+      request,
+      teachersWithDetailsQuerySchema
+    );
 
-    const where: any = {};
+    const where: Parameters<typeof prisma.teacher.findMany>[0]['where'] = {};
 
     if (search) {
       where.OR = [
@@ -30,7 +45,15 @@ export async function GET(request: Request) {
 
     const teachers = await prisma.teacher.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
         classSessions: {
           include: {
             classLevel: true,
@@ -43,7 +66,6 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    console.log("-----------------------------teachersDetails", teachers);
 
     // Transform data to group by Class
     const formattedTeachers = teachers.map((teacher) => {
@@ -78,23 +100,16 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedTeachers);
   } catch (error) {
-    console.error('Error fetching teachers:', error);
-    return NextResponse.json({ error: 'Failed to fetch teachers' }, { status: 500 });
+    return handleApiError(error, 'Error fetching teachers');
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { teacherId, classId, timeSlotIds, sectionName } = body;
-    console.log("-----------------------------body", body);
-
-    if (!teacherId || !classId || !timeSlotIds || !Array.isArray(timeSlotIds)) {
-      return NextResponse.json(
-        { error: 'Invalid input. teacherId, classId, and timeSlotIds (array) are required.' },
-        { status: 400 }
-      );
-    }
+    const { teacherId, classId, timeSlotIds, sectionName } = await parseBody(
+      request,
+      updateTeacherAssignmentsSchema
+    );
 
     // 1. Validation: Check if this Class is assigned to ANY OTHER teacher at the SAME TIME
     // (A Class cannot be taught by two teachers simultaneously)
@@ -121,9 +136,9 @@ export async function PUT(request: Request) {
         });
 
         if (conflictingSessions) {
-            return NextResponse.json(
-                { error: `Class is already assigned to ${conflictingSessions.teacher.name} at ${conflictingSessions.timeSlot.startTime}.` },
-                { status: 409 }
+            throw new ApiError(
+              409,
+              `Class is already assigned to ${conflictingSessions.teacher.name} at ${conflictingSessions.timeSlot.startTime}.`
             );
         }
     }
@@ -171,7 +186,6 @@ export async function PUT(request: Request) {
                   sectionName: sectionName || undefined // Optional section name
               }))
           });
-          console.log("-----------------------------toAdd", toAdd);
       }
 
       return { added: toAdd.length, removed: toRemove.length };
@@ -179,11 +193,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ message: 'Assignments updated successfully', changes: result });
 
-  } catch (error: any) {
-    console.error('Error assigning class:', error);
-    if (error.code === 'P2002') {
-         return NextResponse.json({ error: 'Conflict detected. Teacher might already be booked for this slot.' }, { status: 409 });
-    }
-    return NextResponse.json({ error: 'Failed to update assignments' }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, 'Error assigning class');
   }
 }

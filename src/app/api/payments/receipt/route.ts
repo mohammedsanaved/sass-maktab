@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
+import prisma from '@/lib/prisma';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { parseQuery } from '@/lib/server/validation';
 
-const prisma = new PrismaClient();
+const receiptQuerySchema = z.object({
+  studentId: z.string().optional(),
+  paymentId: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const studentId = searchParams.get('studentId'); // Retrieve latest for student
-        const paymentId = searchParams.get('paymentId'); // Retrieve specific
+        const { studentId, paymentId } = parseQuery(request, receiptQuerySchema);
 
         if (!studentId && !paymentId) {
-            return NextResponse.json({ error: "Student ID or Payment ID required" }, { status: 400 });
+            throw new ApiError(400, 'Student ID or Payment ID required');
         }
 
         let payment;
@@ -52,7 +56,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (!payment) {
-            return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+            throw new ApiError(404, 'Receipt not found');
         }
 
         // Format for Receipt UI
@@ -75,7 +79,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(receiptData);
 
     } catch (error) {
-        console.error("Error fetching receipt:", error);
-        return NextResponse.json({ error: "Failed to fetch receipt" }, { status: 500 });
+        return handleApiError(error, 'Error fetching receipt');
     }
 }

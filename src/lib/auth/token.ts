@@ -1,7 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const ACCESS_TOKEN_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET);
-const REFRESH_TOKEN_SECRET = new TextEncoder().encode(process.env.REFRESH_TOKEN_SECRET);
+function getRequiredSecret(name: 'ACCESS_TOKEN_SECRET' | 'REFRESH_TOKEN_SECRET') {
+  const value = process.env[name];
+
+  if (!value || value.trim().length === 0) {
+    throw new Error(`[auth] Missing required environment variable: ${name}`);
+  }
+
+  return new TextEncoder().encode(value);
+}
+
+const ACCESS_TOKEN_SECRET = getRequiredSecret('ACCESS_TOKEN_SECRET');
+const REFRESH_TOKEN_SECRET = getRequiredSecret('REFRESH_TOKEN_SECRET');
 
 const ACCESS_TOKEN_EXPIRY = '1h';
 const REFRESH_TOKEN_EXPIRY = '7d';
@@ -10,7 +20,7 @@ export interface TokenPayload {
   id: string;
   role: string;
   email: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

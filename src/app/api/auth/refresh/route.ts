@@ -1,17 +1,22 @@
 import { NextResponse } from 'next/server';
 import { verifyRefreshToken, signAccessToken } from '@/lib/auth/token';
 import { cookies } from 'next/headers';
+import { ApiError, handleApiError } from '@/lib/server/api-utils';
+import { assertRateLimit } from '@/lib/rate-limit';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    await assertRateLimit(request, {
+      keyPrefix: 'auth_refresh',
+      limit: 30,
+      windowSeconds: 60,
+    });
+
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get('refreshToken')?.value;
 
     if (!refreshToken) {
-      return NextResponse.json(
-        { error: 'Refresh token not found' },
-        { status: 401 }
-      );
+      throw new ApiError(401, 'Refresh token not found');
     }
 
     const payload = await verifyRefreshToken(refreshToken);
@@ -24,11 +29,14 @@ export async function POST() {
     });
 
     return NextResponse.json({ accessToken: newAccessToken });
-  } catch (error: any) {
-    console.error('Refresh token error:', error);
-    return NextResponse.json(
-      { error: 'Invalid refresh token' },
-      { status: 401 }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return handleApiError(error, 'Refresh token error');
+    }
+
+    return handleApiError(
+      new ApiError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN'),
+      'Refresh token error'
     );
   }
 }
