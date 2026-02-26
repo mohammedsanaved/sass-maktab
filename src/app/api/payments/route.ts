@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import * as yup from 'yup';
+import { calculateStudentArrears } from '@/lib/utils/fee-utils';
+import { normalizeToMonthStart } from '@/lib/utils/date-utils';
 
 // const prisma = new PrismaClient();
 
@@ -92,43 +95,11 @@ export async function GET(request: NextRequest) {
       orderBy: { studentName: 'asc' },
     });
 
-    // 6. Arrears Calculation Logic
-    const referenceDate = new Date();
-    referenceDate.setDate(1);
-    referenceDate.setHours(0, 0, 0, 0);
-
     const formattedStudents = students.map((s) => {
-      let arrearsMonths = 0;
-      let arrearsAmount = 0;
-
-      const joinDate = new Date(s.joinedAt);
-      const startCalculationFrom = new Date(
-        joinDate.getFullYear(),
-        joinDate.getMonth(),
-        1,
+      const arrears = calculateStudentArrears(
+        { joinedAt: s.joinedAt, feeCategory: s.feeCategory, monthlyFees: s.monthlyFees },
+        s.feePayments
       );
-
-      // Collect all paid months across all transactions
-      const allPaidMonths = new Set<string>();
-      s.feePayments.forEach((p) => {
-        if (p.paidMonths) {
-          p.paidMonths.forEach((m: string) => allPaidMonths.add(m));
-        }
-      });
-
-      // Loop from startCalculationFrom to (but not including) referenceDate
-      // This makes the current month's fee NOT an arrear until next month starts.
-      const tempDate = new Date(startCalculationFrom);
-      const paysFee =
-        s.feeCategory === 'REGULAR' || s.feeCategory === 'SPONSORED';
-      while (tempDate < referenceDate && paysFee) {
-        const monthStr = tempDate.toISOString().substring(0, 7);
-        if (!allPaidMonths.has(monthStr)) {
-          arrearsMonths++;
-          arrearsAmount += s.monthlyFees;
-        }
-        tempDate.setMonth(tempDate.getMonth() + 1);
-      }
 
       // Get latest payment (feePayments is already sorted desc by paymentDate)
       const latestPayment =
@@ -152,8 +123,8 @@ export async function GET(request: NextRequest) {
         lastFeePaidMonth: s.lastFeePaidMonth,
         joinedAt: s.joinedAt,
         arrears: {
-          months: arrearsMonths,
-          amount: arrearsAmount,
+          months: arrears.months,
+          amount: arrears.amount,
         },
         latestPayment,
         classSession: s.classSession
@@ -186,22 +157,33 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const paymentSchema = yup.object({
+  studentId: yup.string().required(),
+  amount: yup.number().positive().required(),
+  months: yup.array().of(yup.string()).min(1).required(),
+  remarks: yup.string().optional(),
+});
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentId, amount, months, remarks } = body;
-
-    if (!studentId || !amount || !months || months.length === 0) {
+    
+    // Validate request body
+    try {
+      await paymentSchema.validate(body);
+    } catch (validationError: any) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 },
+        { error: validationError.message },
+        { status: 400 }
       );
     }
+
+    const { studentId, amount, months, remarks } = body;
 
     let maxDate = new Date(0);
     for (const m of months) {
       const d = new Date(m);
-      const normalized = new Date(d.getFullYear(), d.getMonth(), 1);
+      const normalized = normalizeToMonthStart(d);
       if (normalized > maxDate) {
         maxDate = normalized;
       }

@@ -9,6 +9,50 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { apiFetch } from '@/lib/api';
 import Image from 'next/image';
 
+// Fixed MeetingIndicators component moved outside for stability
+const MeetingIndicators = ({ 
+    attendance = ['pending', 'pending', 'pending'], 
+    onToggle 
+  }: { 
+    attendance?: string[], 
+    onToggle: (index: number) => void 
+  }) => {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'attended': return 'bg-green-500 border-green-500 shadow-sm shadow-green-200';
+        case 'absent': return 'bg-red-500 border-red-500 shadow-sm shadow-red-200';
+        default: return 'bg-transparent border-gray-300 dark:border-gray-600 hover:border-primary-500';
+      }
+    };
+
+    // Robust safety check for attendance array
+    const displayAttendance = (Array.isArray(attendance) && attendance.length > 0) 
+        ? attendance 
+        : ['pending', 'pending', 'pending'];
+
+    // If for some reason it has 1 or 2 items, ensure we show 3
+    const finalAttendance = [...displayAttendance];
+    while (finalAttendance.length < 3) finalAttendance.push('pending');
+    if (finalAttendance.length > 3) finalAttendance.length = 3;
+
+    return (
+      <div className="flex gap-2 justify-center items-center min-w-[60px]">
+        {finalAttendance.map((status, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={(e) => {
+                e.stopPropagation();
+                onToggle(idx);
+            }}
+            className={`w-4 h-4 rounded-full border-2 transition-all hover:scale-125 active:scale-90 flex-shrink-0 ${getStatusColor(status)}`}
+            title={`Meeting ${idx + 1}: ${status.charAt(0).toUpperCase() + status.slice(1)}`}
+          />
+        ))}
+      </div>
+    );
+  };
+
 export default function StudentsPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
@@ -245,7 +289,11 @@ export default function StudentsPage() {
     const nextStatus = statusMap[currentAttendance[meetingIdx]] || 'pending';
 
     const newAttendance = [...currentAttendance];
+    // Ensure we have 3 elements if we started with fewer/null
+    while (newAttendance.length < 3) newAttendance.push('pending');
     newAttendance[meetingIdx] = nextStatus;
+    // Cap at 3
+    if (newAttendance.length > 3) newAttendance.length = 3;
 
     // Optimistic UI update
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, meetingAttendance: newAttendance } : s));
@@ -265,40 +313,6 @@ export default function StudentsPage() {
       setStudents(prev => prev.map(s => s.id === studentId ? { ...s, meetingAttendance: currentAttendance } : s));
       alert('Failed to update meeting status');
     }
-  };
-
-  const MeetingIndicators = ({ 
-    attendance = ['pending', 'pending', 'pending'], 
-    onToggle 
-  }: { 
-    attendance?: string[], 
-    onToggle: (index: number) => void 
-  }) => {
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'attended': return 'bg-green-500 border-green-500';
-        case 'absent': return 'bg-red-500 border-red-500';
-        default: return 'bg-transparent border-primary-500';
-      }
-    };
-
-    const displayAttendance = attendance.length === 0 ? ['pending', 'pending', 'pending'] : attendance;
-
-    return (
-      <div className="flex gap-1.5 justify-center">
-        {displayAttendance.map((status, idx) => (
-          <button
-            key={idx}
-            onClick={(e) => {
-                e.stopPropagation();
-                onToggle(idx);
-            }}
-            className={`w-3.5 h-3.5 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${getStatusColor(status)}`}
-            title={`Meeting ${idx + 1}: ${status.charAt(0).toUpperCase() + status.slice(1)}`}
-          />
-        ))}
-      </div>
-    );
   };
 
 
@@ -434,7 +448,7 @@ export default function StudentsPage() {
               <Th>Guardian Info</Th>
               <Th>Class & Section</Th>
               <Th>Status</Th>
-              <Th>Meetings</Th>
+              <Th className="text-center w-32">Meetings</Th>
               <Th>Actions</Th>
             </TableRow>
           </TableHead>
@@ -512,7 +526,7 @@ export default function StudentsPage() {
                     {student.studyStatus}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <MeetingIndicators 
                     attendance={student.meetingAttendance} 
                     onToggle={(idx) => handleToggleMeeting(student.id, idx)} 
@@ -536,7 +550,7 @@ export default function StudentsPage() {
             {paginatedStudents.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={8}
                   className='text-center py-10 text-gray-500'
                 >
                   No students found matching filters.

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 import { Prisma } from '@prisma/client';
+import { calculateStudentArrears } from '@/lib/utils/fee-utils';
+import { AdmissionStatus } from '@/types';
 import { ClientPageRoot } from 'next/dist/client/components/client-page';
 
 export async function GET(request: Request) {
@@ -124,46 +126,19 @@ export async function GET(request: Request) {
         let unpaidMonthsCount = 0;
         let paymentStatus = 'Unpaid'; // Default
 
-        // Only calculate for confirmed students with valid fees
-        if (student.admissionStatus === 'COMPLETED' && student.monthlyFees > 0 && (student.feeCategory === 'REGULAR' || student.feeCategory === 'SPONSORED')) {
-            const referenceDate = new Date(); 
-            referenceDate.setDate(1);
-            referenceDate.setHours(0, 0, 0, 0);
-
-            const joinDate = new Date(student.joinedAt);
-            const startCalculationFrom = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
+        if (student.admissionStatus === AdmissionStatus.COMPLETED) {
+            const arrears = calculateStudentArrears(student, student.feePayments);
             
-            // Flatten all paid months from all payments
-            const allPaidMonths = new Set(
-                student.feePayments.flatMap(p => p.paidMonths)
-            );
-
-            let unpaidCount = 0;
-            let totalCounter = 0;
-            let tempDate = new Date(startCalculationFrom);
-            
-            // Loop from start date to (but not including) current month
-            // This makes the current month's fee NOT an arrear until next month starts.
-            while (tempDate < referenceDate) {
-                totalCounter++;
-                const monthStr = tempDate.toISOString().substring(0, 7);
-                if (!allPaidMonths.has(monthStr)) {
-                    unpaidCount++;
-                }
-                tempDate.setMonth(tempDate.getMonth() + 1);
-            }
-
-            unpaidMonthsCount = unpaidCount;
-            totalDues = unpaidMonthsCount * student.monthlyFees;
+            unpaidMonthsCount = arrears.months;
+            totalDues = arrears.amount;
 
             if (unpaidMonthsCount === 0) {
                 paymentStatus = 'Paid';
-            } else if (unpaidMonthsCount < totalCounter) {
-                paymentStatus = 'Partial';
             } else {
                 paymentStatus = 'Unpaid';
             }
-        } else if (student.admissionStatus !== 'COMPLETED') {
+        }
+ else if (student.admissionStatus !== 'COMPLETED') {
              paymentStatus = 'N/A'; // Not enrolled
         } else if (student.monthlyFees === 0 || (student.feeCategory !== 'REGULAR' && student.feeCategory !== 'SPONSORED')) {
              paymentStatus = 'Free';
