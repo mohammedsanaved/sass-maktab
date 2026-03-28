@@ -1,6 +1,7 @@
 import { hashPassword } from '@/lib/auth/password';
 import { ApiError } from '@/lib/server/api-utils';
 import {
+  countAdmins,
   createAdmin,
   createTeacher,
   findAdminByEmail,
@@ -56,4 +57,9 @@ export async function registerUser(input: RegisterUserInput) {
   });
 
   return { message: 'Teacher registered successfully', userId: newTeacher.id };
+}
+
+export async function hasAnyAdmin() {
+  const adminCount = await countAdmins();
+  return adminCount > 0;
 }

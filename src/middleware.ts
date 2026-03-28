@@ -11,7 +11,6 @@ const intlMiddleware = createMiddleware(routing);
 
 const authenticatedApiPrefixes = [
   '/api/auth/profile',
-  '/api/auth/register',
   '/api/settings',
   '/api/teachers',
   '/api/teacherswithclassdetails',
@@ -24,7 +23,6 @@ const authenticatedApiPrefixes = [
 ] as const;
 
 const adminOnlyApiPrefixes = [
-  '/api/auth/register',
   '/api/migration',
   '/api/metrics',
 ] as const;

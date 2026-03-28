@@ -5,9 +5,10 @@ import {
   ApiError,
   handleApiError,
 } from '@/lib/server/api-utils';
-import { registerUser } from '@/modules/auth/auth.service';
+import { registerUser, hasAnyAdmin } from '@/modules/auth/auth.service';
 import { parseBody } from '@/lib/server/validation';
 import { assertRateLimit } from '@/lib/rate-limit';
+import { verifyAccessToken } from '@/lib/auth/token';
 
 const registerSchema = z
   .object({
@@ -45,11 +46,26 @@ export async function POST(request: Request) {
       windowSeconds: 60,
     });
 
-    const headersList = await headers();
-    const userRole = headersList.get('x-user-role');
+    const hasAdmin = await hasAnyAdmin();
 
-    if (userRole !== 'ADMIN') {
-      throw new ApiError(403, 'Only admin users can register new users');
+    if (hasAdmin) {
+      const authHeader = request.headers.get('authorization');
+
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new ApiError(401, 'Unauthorized');
+      }
+
+      const token = authHeader.split(' ')[1];
+
+      try {
+        const payload = await verifyAccessToken(token);
+
+        if (payload.role !== 'ADMIN') {
+          throw new ApiError(403, 'Forbidden');
+        }
+      } catch {
+        throw new ApiError(401, 'Invalid token');
+      }
     }
 
     const payload = await parseBody(request, registerSchema);
