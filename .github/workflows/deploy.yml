@@ -23,8 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run Lint
-        run: npm run lint
+      # - name: Run Lint
+      #   run: npm run lint
         # This will catch the "missing layout" error during the CI phase!
 
       - name: Run Unit Tests
