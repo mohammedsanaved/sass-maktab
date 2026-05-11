@@ -9,9 +9,8 @@
   "start": "next start",
   "lint": "eslint",
   "prepare": "husky",
-  "preview": "opennextjs-cloudflare && wrangler dev", 
-  "deploy": "opennextjs-cloudflare && wrangler deploy",
-  "cf:dev": "opennextjs-cloudflare dev"
+  "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+  "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
 },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx}": [
