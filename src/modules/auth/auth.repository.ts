@@ -23,6 +23,8 @@ export function countAdmins() {
   return prisma.admin.count();
 }
 
+
+
 export function findTeacherByEmail(email: string) {
   return prisma.teacher.findUnique({
     where: { email },

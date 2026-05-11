@@ -1,0 +1,31 @@
+{
+  "agents": {
+    "agent-1777709003889-6gwg9b": {
+      "agentId": "agent-1777709003889-6gwg9b",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "anthropic"
+      },
+      "createdAt": "2026-05-02T08:03:23.890Z",
+      "model": "sonnet",
+      "modelRoutedBy": "default"
+    },
+    "agent-1777709217745-sqb6qz": {
+      "agentId": "agent-1777709217745-sqb6qz",
+      "agentType": "architect",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "anthropic"
+      },
+      "createdAt": "2026-05-02T08:06:57.746Z",
+      "model": "opus",
+      "modelRoutedBy": "default"
+    }
+  },
+  "version": "3.0.0"
+}

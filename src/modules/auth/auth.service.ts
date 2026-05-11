@@ -61,5 +61,6 @@ export async function registerUser(input: RegisterUserInput) {
 
 export async function hasAnyAdmin() {
   const adminCount = await countAdmins();
+  console.log(adminCount);
   return adminCount > 0;
 }
