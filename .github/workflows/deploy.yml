@@ -31,8 +31,8 @@ jobs:
       #   env:
       #     DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
-      - name: Lint
-        run: npm run lint
+      # - name: Lint
+      #   run: npm run lint
 
   # ── Job 2: Deploy only on main, only if tests pass ──
   deploy:

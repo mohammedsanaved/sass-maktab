@@ -5,7 +5,7 @@
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
   const getAccessToken = () => typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  let token = getAccessToken();
+  const token = getAccessToken();
 
   const headers = new Headers(options.headers || {});
   if (token) {

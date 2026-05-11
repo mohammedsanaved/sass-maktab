@@ -169,24 +169,24 @@ export const TimeInput: React.FC<TimeInputProps> = ({
   // Helper to parse value into 12-hour components
   const get12HourComponents = (timeStr: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
     if (!timeStr) return { hour: '', minute: '', period: 'AM' };
-    
+
     // Check if it's already "HH:mm AM/PM"
     if (timeStr.includes(' ')) {
       const [time, period] = timeStr.split(' ');
       const [hour, minute] = time.split(':');
-      return { 
-        hour: hour || '', 
-        minute: minute || '', 
-        period: (period?.toUpperCase() === 'PM' ? 'PM' : 'AM') 
+      return {
+        hour: hour || '',
+        minute: minute || '',
+        period: (period?.toUpperCase() === 'PM' ? 'PM' : 'AM')
       };
     }
-    
+
     // Fallback: handle "HH:mm" (24-hour)
     const [hours, minutes] = timeStr.split(':');
     const hour24 = parseInt(hours, 10);
     const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM';
     const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-    
+
     return {
       hour: hour12.toString().padStart(2, '0'),
       minute: minutes || '00',
@@ -204,13 +204,13 @@ export const TimeInput: React.FC<TimeInputProps> = ({
   };
 
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let newHour = e.target.value;
-    
+    const newHour = e.target.value;
+
     if (newHour === '') {
       onChange('');
       return;
     }
-    
+
     const hourNum = parseInt(newHour, 10);
     if (hourNum >= 1 && hourNum <= 12) {
       formatAndNotify(newHour, minute, period);
@@ -219,12 +219,12 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 
   const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMinute = e.target.value;
-    
+
     if (newMinute === '') {
       formatAndNotify(hour, '00', period);
       return;
     }
-    
+
     const minuteNum = parseInt(newMinute, 10);
     if (minuteNum >= 0 && minuteNum <= 59) {
       formatAndNotify(hour, newMinute, period);
@@ -269,22 +269,20 @@ export const TimeInput: React.FC<TimeInputProps> = ({
           <button
             type="button"
             onClick={() => handlePeriodChange('AM')}
-            className={`px-3 py-1 text-xs font-semibold transition-colors ${
-              period === 'AM'
-                ? 'bg-primary-500 text-white'
-                : 'bg-transparent text-foreground hover:bg-muted'
-            }`}
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${period === 'AM'
+              ? 'bg-primary-500 text-white'
+              : 'bg-transparent text-foreground hover:bg-muted'
+              }`}
           >
             AM
           </button>
           <button
             type="button"
             onClick={() => handlePeriodChange('PM')}
-            className={`px-3 py-1 text-xs font-semibold transition-colors ${
-              period === 'PM'
-                ? 'bg-primary-500 text-white'
-                : 'bg-transparent text-foreground hover:bg-muted'
-            }`}
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${period === 'PM'
+              ? 'bg-primary-500 text-white'
+              : 'bg-transparent text-foreground hover:bg-muted'
+              }`}
           >
             PM
           </button>
