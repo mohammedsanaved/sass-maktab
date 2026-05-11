@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "dev": "next dev --turbopack",
-  "build": "next build",
-  "start": "next start",
-  "lint": "eslint",
-  "prepare": "husky",
-  "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-  "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
-},
+    "dev": "next dev --turbopack",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "prepare": "husky",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
+  },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
