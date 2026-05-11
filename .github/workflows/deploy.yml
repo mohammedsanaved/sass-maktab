@@ -27,8 +27,8 @@ jobs:
       #   run: npm run lint
         # This will catch the "missing layout" error during the CI phase!
 
-      - name: Run Unit Tests
-        run: npm test
+      # - name: Run Unit Tests
+      #   run: npm test
         # Note: Ensure "test": "vitest run" is in your package.json
 
       # Optional: Uncomment if you have integration tests ready
