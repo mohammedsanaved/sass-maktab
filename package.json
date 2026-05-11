@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "preview": "opennextjs build && opennextjs start",
+    "deploy": "opennextjs build && opennextjs deploy",
+    "cf:dev": "opennextjs dev"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js,jsx}": [
@@ -17,6 +20,7 @@
     ]
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.19.9",
     "@prisma/client": "6.19",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",

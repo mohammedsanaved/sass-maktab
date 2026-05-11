@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"name":{"$numberInt":"1"}},"name":"ClassLevel_name_key","unique":true}],"uuid":"95f59a1067f44e41af132e272849c369","collectionName":"ClassLevel","type":"collection"}
