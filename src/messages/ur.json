@@ -1,0 +1,16 @@
+{
+  "Home": {
+    "welcome": "خوش آمدید، محمد سناوید",
+    "dashboard": "ڈیش بورڈ",
+    "students": "طلباء",
+    "language": "زبان",
+    "getStarted": "ترمیم کرکے شروع کریں",
+    "saveChanges": "محفوظ کریں اور اپنی تبدیلیاں فوراً دیکھیں۔",
+    "deploy": "اب تعینات کریں",
+    "readDocs": "ہماری دستاویزات پڑھیں",
+    "learn": "سیکھیں",
+    "examples": "مثالیں",
+    "goToNext": "nextjs.org پر جائیں",
+    "settings": "ترتیبات"
+  }
+}

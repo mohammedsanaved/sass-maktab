@@ -1,0 +1,1094 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Mohammadiya App API",
+    "version": "1.0.0",
+    "description": "API for Admin, Teachers, Students"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Local API"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "refreshToken"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "password123"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "role", "name"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["ADMIN", "TEACHER"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Required for TEACHER"
+          },
+          "address": {
+            "type": "string",
+            "description": "Required for TEACHER"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string" },
+          "name": { "type": "string" },
+          "role": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ClassLevel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ClassLevelInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "TimeSlot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "startTime": { "type": "string" },
+          "endTime": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TimeSlotInput": {
+        "type": "object",
+        "required": ["label", "startTime", "endTime"],
+        "properties": {
+          "label": { "type": "string" },
+          "startTime": { "type": "string" },
+          "endTime": { "type": "string" }
+        }
+      },
+      "Teacher": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "address": { "type": "string" },
+          "role": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "studentName": { "type": "string" },
+          "rollNumber": { "type": "string" },
+          "grNumber": { "type": "string" },
+          "gender": { "type": "string" },
+          "age": { "type": "integer" },
+          "fatherName": { "type": "string" },
+          "mobile": { "type": "string" },
+          "formNo": { "type": "string" },
+          "admissionFee": { "type": "number" },
+          "monthlyFees": { "type": "number" },
+          "remarks": { "type": "string" },
+          "hafizCategory": { "type": "string" },
+          "fullTimeSubCategory": { "type": "string" },
+          "classSession": { "$ref": "#/components/schemas/ClassSession" }
+        }
+      },
+      "ClassSession": {
+        "type": "object",
+        "properties": {
+             "id": { "type": "string" },
+             "classLevel": { "$ref": "#/components/schemas/ClassLevel" },
+             "timeSlot": { "$ref": "#/components/schemas/TimeSlot" }
+        }
+      },
+
+      "TeacherInput": {
+        "type": "object",
+        "required": ["name", "email", "password", "phone", "address"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" },
+          "phone": { "type": "string" },
+          "address": { "type": "string" }
+        }
+      },
+      "TeacherWithClasses": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Teacher" },
+          {
+            "type": "object",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "classLevel": { "$ref": "#/components/schemas/ClassLevel" },
+                    "timeSlots": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TimeSlot" }
+                    },
+                    "totalStudents": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "paths": {
+
+    "/students": {
+      "get": {
+        "summary": "List Students with Filters",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "classId", "in": "query", "schema": { "type": "string" } },
+          { "name": "timeSlotId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Students",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Admission (Create Student)",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentName", "fatherName", "mobile", "dateOfBirth", "gender"],
+                "properties": {
+                  "studentName": { "type": "string" },
+                  "fatherName": { "type": "string" },
+                  "gender": { "type": "string" },
+                  "mobile": { "type": "string" },
+                  "dateOfBirth": { "type": "string", "format": "date-time" },
+                  "grNumber": { "type": "string" },
+                  "rollNumber": { "type": "string" },
+                  "residence": { "type": "string" },
+                  "fullPermanentAddress": { "type": "string" },
+                  "emergencyContactName": { "type": "string" },
+                  "emergencyContactPhone": { "type": "string" },
+                  "classId": { "type": "string" },
+                  "timeSlotId": { "type": "string" },
+                  "hafizCategory": { "type": "string" },
+                  "fullTimeSubCategory": { "type": "string" },
+                  "formNo": { "type": "string" },
+                  "admissionFee": { "type": "number" },
+                  "monthlyFees": { "type": "number" },
+                  "remarks": { "type": "string" },
+                  "age": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Student Created" }
+        }
+      }
+    },
+    "/students/search": {
+      "get": {
+        "summary": "Search Students",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "required": true, "description": "Search query (Name, RollNo, GrNo)" }
+        ],
+        "responses": {
+          "200": { "description": "Search results", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } } } } }
+        }
+      }
+    },
+    "/students/promote": {
+      "put": {
+        "summary": "Bulk Promote Students",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentIds", "classId", "timeSlotId"],
+                "properties": {
+                  "studentIds": { "type": "array", "items": { "type": "string" } },
+                  "classId": { "type": "string" },
+                  "timeSlotId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Promotion successful" }
+        }
+      }
+    },
+    "/students/export": {
+      "get": {
+        "summary": "Export Students as CSV",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": { "description": "CSV File", "content": { "text/csv": { "schema": { "type": "string", "format": "binary" } } } }
+        }
+      }
+    },
+    "/students/{id}": {
+      "get": {
+        "summary": "Get Student Details",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Student details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update Student Details",
+        "tags": ["Students"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "studentName": { "type": "string" }, "status": { "type": "string" } } } 
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Student updated" }
+        }
+      }
+    },
+    "/teacherswithclassdetails": {
+      "get": {
+        "summary": "List all Teachers with Details and Assignments",
+        "tags": ["Teachers"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search by Name, Phone, Email"
+          },
+          {
+            "name": "classId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by Class Level ID"
+          },
+          {
+            "name": "timeSlotId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by Time Slot ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Teachers with assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TeacherWithClasses" }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server Error" }
+        }
+      },
+      "put": {
+        "summary": "Assign Class and TimeSlots to a Teacher",
+        "tags": ["Teachers"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["teacherId", "classId", "timeSlotIds"],
+                "properties": {
+                  "teacherId": { "type": "string" },
+                  "classId": { "type": "string" },
+                  "timeSlotIds": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "sectionName": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Assignments updated" },
+          "400": { "description": "Invalid input" },
+          "409": { "description": "Conflict: Class already assigned to another teacher" },
+          "500": { "description": "Server Error" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user (Admin or Teacher)",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "userId": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "409": {
+            "description": "User already exists",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenResponse"
+              }
+              }
+            },
+            "headers": {
+            "Set-Cookie": {
+              "description": "refreshToken cookie",
+              "schema": {
+              "type": "string"
+              }
+            }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+              "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "summary": "Get current user profile",
+        "tags": ["Auth"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "tags": ["Auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout user",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Logged out successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/classes": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get all classes",
+        "responses": {
+          "200": {
+            "description": "List of classes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ClassLevel" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Create a new class",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClassLevelInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Class created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClassLevel" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/settings/classes/{id}": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get a class by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClassLevel" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": {
+            "description": "Class not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Update a class",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClassLevelInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Class updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClassLevel" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Delete a class",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class deleted"
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/settings/timeslots": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get all time slots",
+        "responses": {
+          "200": {
+            "description": "List of time slots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TimeSlot" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Create a new time slot",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TimeSlotInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Time slot created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeSlot" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/settings/timeslots/{id}": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get a time slot by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Time slot details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeSlot" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Update a time slot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TimeSlotInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Time slot updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TimeSlot" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Delete a time slot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Time slot deleted"
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/settings/teachers": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get all teachers",
+        "responses": {
+          "200": {
+            "description": "List of teachers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Teacher" }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Create a new teacher",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TeacherInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Teacher created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/settings/teachers/{id}": {
+      "get": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Get a teacher by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Update a teacher",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TeacherInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Teacher updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Teacher" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "tags": ["Settings"],
+        "security": [{"bearerAuth": []}],
+        "summary": "Delete a teacher",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher deleted"
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/payments": {
+      "get": {
+        "summary": "List Payments / Search Students",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Search by Name or Roll Number" },
+          { "name": "classId", "in": "query", "schema": { "type": "string" } },
+          { "name": "timeSlotId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PAID", "UNPAID", "ALL"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of students with payment status",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Student" } }, "pagination": { "type": "object" } } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Record Payment (PayNow / Advance)",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentId", "amount", "months"],
+                "properties": {
+                  "studentId": { "type": "string" },
+                  "amount": { "type": "number" },
+                  "months": { "type": "array", "items": { "type": "string" }, "description": "Array of YYYY-MM" },
+                  "remarks": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Payment recorded" }
+        }
+      }
+    },
+    "/payments/receipt": {
+      "get": {
+        "summary": "Get Receipt Details",
+        "tags": ["Payments"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "paymentId", "in": "query", "schema": { "type": "string" } },
+          { "name": "studentId", "in": "query", "schema": { "type": "string" }, "description": "Get latest receipt for student" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipt details",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/dashboard/admissionapplications": {
+      "get": {
+        "summary": "List Admission Applications",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of applications" }
+        }
+      },
+      "put": {
+        "summary": "Update Admission Status",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["studentId", "status"],
+                "properties": {
+                  "studentId": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    },
+    "/dashboard/attendencestatus": {
+      "get": {
+        "summary": "Get Attendance Status Counts",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": { "description": "Counts of regular, irregular, completed" }
+        }
+      }
+    },
+    "/dashboard/overview": {
+      "get": {
+        "summary": "Get Dashboard Overview Stats",
+        "tags": ["Dashboard"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          { "name": "month", "in": "query", "schema": { "type": "integer" } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Overview stats" }
+        }
+      }
+    }
+  }
+}

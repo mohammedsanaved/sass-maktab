@@ -1,0 +1,516 @@
+import React, {
+  InputHTMLAttributes,
+  ButtonHTMLAttributes,
+  ReactNode,
+  forwardRef,
+} from 'react';
+import { Loader2, LucideIcon } from 'lucide-react';
+
+// --- Button ---
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'contained' | 'outlined' | 'text';
+  color?: 'primary' | 'secondary' | 'danger' | 'success';
+  size?: 'sm' | 'md' | 'lg';
+  startIcon?: ReactNode;
+  fullWidth?: boolean;
+  isLoading?: boolean;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      variant = 'contained',
+      color = 'primary',
+      size = 'md',
+      className = '',
+      startIcon,
+      fullWidth,
+      isLoading,
+      ...props
+    },
+    ref
+  ) => {
+    const baseStyles =
+      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+
+    const sizeStyles = {
+      sm: 'px-3 py-1.5 text-xs',
+      md: 'px-4 py-2 text-sm',
+      lg: 'px-6 py-3 text-base',
+    };
+
+    const variants = {
+      contained: {
+        primary:
+          'bg-primary-100 hover:bg-primary-700 text-foreground shadow-md active:shadow-sm',
+        secondary:
+          'bg-secondary-500 hover:bg-secondary-600 text-foreground shadow-md active:shadow-sm focus:ring-secondary-500',
+        danger:
+          'bg-red-600 hover:bg-red-700 text-foreground shadow-md active:shadow-sm focus:ring-red-500',
+        success:
+          'bg-green-600 hover:bg-green-700 text-foreground shadow-md active:shadow-sm focus:ring-green-500',
+      },
+      outlined: {
+        primary:
+          'border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500',
+        secondary:
+          'border border-secondary-500 text-secondary-500 hover:bg-secondary-50 focus:ring-secondary-500',
+        danger:
+          'border border-red-600 text-red-600 hover:bg-red-50 focus:ring-red-500',
+        success:
+          'border border-green-600 text-green-600 hover:bg-green-50 focus:ring-green-500',
+      },
+      text: {
+        primary:
+          'text-primary-500 hover:bg-primary-100 focus:ring-primary-500 shadow-none',
+        secondary:
+          'text-secondary-500 hover:bg-secondary-50 focus:ring-secondary-500 shadow-none',
+        danger: 'text-red-600 hover:bg-red-50 focus:ring-red-500 shadow-none',
+        success:
+          'text-green-600 hover:bg-green-50 focus:ring-green-500 shadow-none',
+      },
+    };
+
+    const colorStyles = variants[variant][color];
+    const currentSizeStyle = sizeStyles[size];
+    const widthStyles = fullWidth ? 'w-full' : '';
+
+    return (
+      <button
+        ref={ref}
+        className={`${baseStyles} ${currentSizeStyle} ${colorStyles} ${widthStyles} ${className}`}
+        disabled={isLoading}
+        {...props}
+      >
+        {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+        {!isLoading && startIcon && <span className='mr-2'>{startIcon}</span>}
+        {children}
+      </button>
+    );
+  }
+);
+Button.displayName = 'Button';
+
+// --- TextField (Input) ---
+interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: boolean;
+  helperText?: string;
+  icon?: LucideIcon;
+  fullWidth?: boolean;
+}
+
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
+  (
+    {
+      label,
+      error,
+      helperText,
+      className = '',
+      icon: Icon,
+      fullWidth,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <div className={`flex flex-col gap-1.5 mb-4 ${fullWidth ? 'w-full' : ''} ${className}`}>
+        {label && (
+          <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
+            {label}
+          </label>
+        )}
+        <div className="relative">
+          {Icon && (
+            <div className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground'>
+              <Icon size={16} />
+            </div>
+          )}
+          <input
+            ref={ref}
+            className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'} 
+            ${Icon ? 'pl-9' : 'pl-3'}`}
+            {...props}
+          />
+        </div>
+        {helperText && (
+          <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {helperText}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+TextField.displayName = 'TextField';
+
+// --- TimeInput (12-hour format with AM/PM) ---
+interface TimeInputProps {
+  label: string;
+  value: string; // Expected format: "HH:mm AM/PM" or "HH:mm" (handles both)
+  onChange: (value: string) => void;
+  error?: boolean;
+  helperText?: string;
+  className?: string;
+  placeholder?: string;
+}
+
+export const TimeInput: React.FC<TimeInputProps> = ({
+  label,
+  value,
+  onChange,
+  error,
+  helperText,
+  className = '',
+  placeholder = '09:00 AM',
+}) => {
+  // Helper to parse value into 12-hour components
+  const get12HourComponents = (timeStr: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
+    if (!timeStr) return { hour: '', minute: '', period: 'AM' };
+
+    // Check if it's already "HH:mm AM/PM"
+    if (timeStr.includes(' ')) {
+      const [time, period] = timeStr.split(' ');
+      const [hour, minute] = time.split(':');
+      return {
+        hour: hour || '',
+        minute: minute || '',
+        period: (period?.toUpperCase() === 'PM' ? 'PM' : 'AM')
+      };
+    }
+
+    // Fallback: handle "HH:mm" (24-hour)
+    const [hours, minutes] = timeStr.split(':');
+    const hour24 = parseInt(hours, 10);
+    const period: 'AM' | 'PM' = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+
+    return {
+      hour: hour12.toString().padStart(2, '0'),
+      minute: minutes || '00',
+      period,
+    };
+  };
+
+  const { hour, minute, period } = get12HourComponents(value);
+
+  const formatAndNotify = (h: string, m: string, p: 'AM' | 'PM') => {
+    // We store as "HH:mm AM/PM" string
+    const formattedHour = h.padStart(2, '0');
+    const formattedMinute = (m || '00').padStart(2, '0');
+    onChange(`${formattedHour}:${formattedMinute} ${p}`);
+  };
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHour = e.target.value;
+
+    if (newHour === '') {
+      onChange('');
+      return;
+    }
+
+    const hourNum = parseInt(newHour, 10);
+    if (hourNum >= 1 && hourNum <= 12) {
+      formatAndNotify(newHour, minute, period);
+    }
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMinute = e.target.value;
+
+    if (newMinute === '') {
+      formatAndNotify(hour, '00', period);
+      return;
+    }
+
+    const minuteNum = parseInt(newMinute, 10);
+    if (minuteNum >= 0 && minuteNum <= 59) {
+      formatAndNotify(hour, newMinute, period);
+    }
+  };
+
+  const handlePeriodChange = (newPeriod: 'AM' | 'PM') => {
+    formatAndNotify(hour || '12', minute || '00', newPeriod);
+  };
+
+  return (
+    <div className={`flex flex-col gap-1.5 mb-4 ${className}`}>
+      <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
+        {label}
+      </label>
+      <div className="flex gap-2 items-center">
+        {/* Hour Input */}
+        <input
+          type="number"
+          min="1"
+          max="12"
+          value={hour === '00' ? '' : hour.replace(/^0/, '')} // Don't show leading zero for single digit input focus if user prefers
+          onChange={handleHourChange}
+          placeholder="09"
+          className={`flex h-10 w-16 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'}`}
+        />
+        <span className="text-foreground text-xl font-bold">:</span>
+        {/* Minute Input */}
+        <input
+          type="number"
+          min="0"
+          max="59"
+          value={minute}
+          onChange={handleMinuteChange}
+          placeholder="00"
+          className={`flex h-10 w-16 rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center 
+            ${error ? 'border-red-500 focus-visible:ring-red-500' : 'border-input focus-visible:ring-primary-500'}`}
+        />
+        {/* AM/PM Toggle */}
+        <div className={`flex rounded-md border h-10 overflow-hidden ${error ? 'border-red-500' : 'border-input'}`}>
+          <button
+            type="button"
+            onClick={() => handlePeriodChange('AM')}
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${period === 'AM'
+              ? 'bg-primary-500 text-white'
+              : 'bg-transparent text-foreground hover:bg-muted'
+              }`}
+          >
+            AM
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePeriodChange('PM')}
+            className={`px-3 py-1 text-xs font-semibold transition-colors ${period === 'PM'
+              ? 'bg-primary-500 text-white'
+              : 'bg-transparent text-foreground hover:bg-muted'
+              }`}
+          >
+            PM
+          </button>
+        </div>
+      </div>
+      {helperText && (
+        <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// --- Card ---
+interface CardProps {
+  children?: ReactNode;
+  className?: string;
+  variant?: 'standard' | 'neubrutal';
+}
+
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  variant = 'standard',
+}) => {
+  const baseStyles =
+    variant === 'neubrutal'
+      ? 'neubrutal-card'
+      : 'bg-background rounded-xl shadow-md';
+
+  return <div className={`${baseStyles} p-6 ${className}`}>{children}</div>;
+};
+
+// --- Table Components ---
+export const Table: React.FC<{ children?: ReactNode; className?: string }> = ({
+  children,
+  className = '',
+}) => (
+  <div
+    className={`overflow-x-auto rounded-lg shadow border border-primary-700 ${className}`}
+  >
+    <table className='min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-background'>
+      {children}
+    </table>
+  </div>
+);
+
+export const TableHead: React.FC<{ children?: ReactNode }> = ({ children }) => (
+  <thead className='text-foreground font-semibold'>{children}</thead>
+);
+
+export const TableBody: React.FC<{ children?: ReactNode }> = ({ children }) => (
+  <tbody className='bg-background'>{children}</tbody>
+);
+
+export const TableRow: React.FC<
+  {
+    children?: ReactNode;
+    className?: string;
+  } & React.HTMLAttributes<HTMLTableRowElement>
+> = ({ children, className = '', ...props }) => (
+  <tr className={`transition-colors ${className}`} {...props}>
+    {children}
+  </tr>
+);
+
+export const Th: React.FC<
+  { children?: ReactNode; className?: string } & React.ThHTMLAttributes<HTMLTableHeaderCellElement>
+> = ({ children, className = '', ...props }) => (
+  <th
+    className={`px-6 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wide ${className}`}
+    {...props}
+  >
+    {children}
+  </th>
+);
+
+export const TableCell: React.FC<
+  {
+    children?: ReactNode;
+    className?: string;
+  } & React.TdHTMLAttributes<HTMLTableCellElement>
+> = ({ children, className = '', ...props }) => (
+  <td
+    className={`px-6 py-4 whitespace-nowrap text-sm text-foreground ${className}`}
+    {...props}
+  >
+    {children}
+  </td>
+);
+
+// --- Select ---
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  options: { value: string | number; label: string }[];
+  label?: string;
+  error?: boolean;
+  helperText?: string;
+}
+
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ options, className = '', label, error, helperText, ...props }, ref) => {
+    return (
+      <div className={`flex flex-col gap-1.5 mb-4 w-full ${className}`}>
+        {label && (
+          <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${error ? 'text-red-500' : 'text-foreground'}`}>
+            {label}
+          </label>
+        )}
+        <select
+          ref={ref}
+          className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 
+          ${error ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-primary-500'} 
+          ${className}`}
+          {...props}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {helperText && (
+          <p className={`text-[0.8rem] font-medium ${error ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {helperText}
+          </p>
+        )}
+      </div>
+    );
+  }
+);
+Select.displayName = 'Select';
+
+// --- Badge ---
+interface BadgeProps {
+  children?: ReactNode;
+  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple';
+  size?: 'sm' | 'md';
+  variant?: 'solid' | 'soft';
+}
+
+export const Badge: React.FC<BadgeProps> = ({
+  children,
+  color = 'blue',
+  size = 'md',
+  variant = 'soft',
+}) => {
+  const variants = {
+    soft: {
+      blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      green: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      red: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      yellow:
+        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      purple:
+        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    },
+    solid: {
+      blue: 'bg-blue-600 text-white',
+      green: 'bg-green-600 text-white',
+      red: 'bg-red-600 text-white',
+      yellow: 'bg-yellow-600 text-white',
+      purple: 'bg-purple-600 text-white',
+    },
+  };
+
+  const sizes = {
+    sm: 'px-1.5 py-0.5 text-[10px]',
+    md: 'px-2 py-0.5 text-xs',
+  };
+
+  return (
+    <span
+      className={`${sizes[size]} inline-flex leading-5 font-semibold rounded-full ${variants[variant][color]}`}
+    >
+      {children}
+    </span>
+  );
+};
+
+// --- Checkbox ---
+export const Checkbox = (props: InputHTMLAttributes<HTMLInputElement>) => (
+  <input
+    type='checkbox'
+    className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer'
+    {...props}
+  />
+);
+
+// --- Modal ---
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children?: ReactNode;
+  actions?: ReactNode;
+}
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  actions,
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className='fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6'>
+      {/* Overlay */}
+      <div
+        className='fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity'
+        onClick={onClose}
+        aria-hidden='true'
+      />
+
+      {/* Modal Content container to handle centering and sizing */}
+      <div className='relative bg-background rounded-xl shadow-2xl transform transition-all sm:max-w-lg w-full overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]'>
+        <div className='px-6 pt-6 pb-4 overflow-y-auto'>
+          <h3 className='text-xl font-bold text-foreground mb-2'>
+            {title}
+          </h3>
+          <div className='mt-4'>{children}</div>
+        </div>
+        {actions && (
+          <div className='bg-primary-50 px-6 py-4 flex flex-row-reverse gap-3 border-t border-gray-100'>
+            {actions}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

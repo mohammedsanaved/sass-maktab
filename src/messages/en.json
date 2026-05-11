@@ -1,0 +1,16 @@
+{
+  "Home": {
+    "welcome": "Welcome Back, Mohammed Sanaved",
+    "dashboard": "Dashboard",
+    "students": "Students",
+    "language": "Language",
+    "getStarted": "Get started by editing",
+    "saveChanges": "Save and see your changes instantly.",
+    "deploy": "Deploy now",
+    "readDocs": "Read our docs",
+    "learn": "Learn",
+    "examples": "Examples",
+    "goToNext": "Go to nextjs.org",
+    "settings": "Settings"
+  }
+}
